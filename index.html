@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Design Line Manager</title>
+<link rel="stylesheet" href="styles.css?v=4" />
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a0a 0%,#b01010 100%);padding:20px">
+  <div style="background:#fff;padding:30px 20px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,0.2);width:100%;max-width:400px;text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">🖨️</div>
+    <h1 style="color:#e01515;font-size:22px;margin-bottom:4px">Design Line Manager</h1>
+    <p style="color:#666;font-size:13px;margin-bottom:20px">Design Line Agency</p>
+    <input type="text" id="loginUser" placeholder="Username" style="width:100%;padding:12px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;margin-bottom:10px;box-sizing:border-box">
+    <input type="password" id="loginPass" placeholder="Password" style="width:100%;padding:12px;border:1.5px solid #ddd;border-radius:8px;font-size:15px;margin-bottom:14px;box-sizing:border-box">
+    <button id="loginBtn" style="width:100%;padding:14px;background:#e01515;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer">LOGIN</button>
+    <p id="loginError" style="color:#dc2626;font-size:13px;margin-top:10px;min-height:18px"></p>
+    <p style="color:#888;font-size:12px;margin-top:16px;padding:10px;background:#f5f5f5;border-radius:6px">
+      First time? Use: <strong>admin</strong> / <strong>admin123</strong>
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appPage" style="display:none">
+
+  <!-- TOP BAR (with menu) -->
+  <div id="topbar" style="background:#e01515;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,0.1)">
+    <button id="menuBtn" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:4px 8px">☰</button>
+    <h1 id="pageTitle" style="font-size:17px;font-weight:700;flex:1;margin:0">DASHBOARD</h1>
+    <button id="logoutBtn" style="background:rgba(255,255,255,0.2);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">LOGOUT</button>
+  </div>
+
+  <!-- SIDEBAR (overlay) -->
+  <div id="sidebarOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200"></div>
+  <aside id="sidebar" style="position:fixed;top:0;left:-280px;width:260px;height:100vh;background:#0a0a0a;color:#fff;z-index:300;transition:left 0.3s;overflow-y:auto">
+    <div style="padding:20px;background:linear-gradient(135deg,#e01515 0%,#b01010 100%);display:flex;align-items:center;gap:10px">
+      <span style="font-size:24px">🖨️</span>
+      <div>
+        <div style="font-size:16px;font-weight:700">DL Manager</div>
+        <div style="font-size:11px;opacity:0.8" id="userInfo">Admin</div>
+      </div>
+      <button id="closeSidebar" style="margin-left:auto;background:none;border:none;color:#fff;font-size:24px;cursor:pointer">×</button>
+    </div>
+    <nav style="padding:8px 0">
+      <a href="#" data-page="dashboard" class="nav-item active" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>📊</span> Dashboard</a>
+      <a href="#" data-page="quickbill" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>⚡</span> Quick Bill</a>
+      <a href="#" data-page="invoices" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>🛒</span> Invoices</a>
+      <a href="#" data-page="newinvoice" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>📄</span> New Invoice</a>
+      <a href="#" data-page="customers" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>👥</span> Customers</a>
+      <a href="#" data-page="items" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>📚</span> Items</a>
+      <a href="#" data-page="payments" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>💲</span> Payments</a>
+      <a href="#" data-page="expenses" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>💰</span> Expenses</a>
+      <a href="#" data-page="vendors" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>🏛️</span> Vendors</a>
+      <a href="#" data-page="reports" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>📈</span> Reports</a>
+      <a href="#" data-page="settings" class="nav-item" style="display:flex;align-items:center;gap:12px;padding:14px 20px;color:#ccc;text-decoration:none;font-size:14px;font-weight:600;border-left:3px solid transparent"><span>⚙️</span> Settings</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main style="padding:16px;max-width:1200px;margin:0 auto">
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div id="statsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px"></div>
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <h3 style="margin-bottom:12px;font-size:15px">Recent Invoices</h3>
+        <div style="overflow-x:auto">
+          <table id="recentTbl" style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Inv #</th><th style="padding:10px;text-align:left">Customer</th><th style="padding:10px;text-align:right">Amount</th><th style="padding:10px;text-align:left">Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK BILL -->
+    <div class="page" id="page-quickbill" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <h3 style="margin-bottom:10px;font-size:15px">⚡ Quick Bill (Walk-in)</h3>
+        <p style="background:#fffbeb;border-left:3px solid #f59e0b;padding:8px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#92400e">No customer record saved. Use INVOICE for regular customers.</p>
+        <input type="text" id="qbCustomer" placeholder="Customer Name" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+        <input type="text" id="qbPhone" placeholder="Phone (optional)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
+        <h4 style="font-size:14px;margin:12px 0 8px">Add Items</h4>
+        <select id="qbItem" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box"></select>
+        <div id="qbAreaBox" style="display:none;background:#fff5f5;border:2px solid #e01515;border-radius:8px;padding:12px;margin-bottom:8px">
+          <h4 style="color:#e01515;margin:0 0 8px;font-size:13px">📐 Area Calculator</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><label style="font-size:11px;display:block">Height</label><input type="number" id="qbHeight" min="0" step="0.01" placeholder="3" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;display:block">Width</label><input type="number" id="qbWidth" min="0" step="0.01" placeholder="5" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;display:block">Rate/sqft</label><input type="number" id="qbAreaPrice" min="0" step="0.01" value="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+          </div>
+          <div id="qbAreaResult" style="background:#fff;padding:8px;border-radius:6px;margin-top:8px;font-weight:600;font-size:13px"></div>
+        </div>
+        <div id="qbQtyBox" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label style="font-size:11px;display:block">Quantity</label><input type="number" id="qbQty" value="1" min="0" step="0.01" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:11px;display:block">Price (Rs.)</label><input type="number" id="qbPrice" value="0" min="0" step="0.01" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+        </div>
+        <button id="qbAddBtn" style="width:100%;padding:12px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">➕ Add to Bill</button>
+        <div style="overflow-x:auto;margin-bottom:12px">
+          <table id="qbItemsTbl" style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px;text-align:left">Item</th><th style="padding:8px;text-align:right">Total</th><th style="padding:8px">Action</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="background:#f5f5f5;padding:12px;border-radius:8px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Subtotal:</span><span id="qbSubtotal">Rs. 0</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px;align-items:center"><span>Discount:</span><input type="number" id="qbDiscount" value="0" min="0" style="width:80px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;text-align:right"></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:18px;font-weight:700;color:#e01515;border-top:2px solid #0a0a0a;margin-top:6px"><span>TOTAL:</span><span id="qbTotal">Rs. 0</span></div>
+        </div>
+        <select id="qbStatus" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+          <option value="paid">Paid</option><option value="unpaid">Unpaid</option>
+        </select>
+        <input type="number" id="qbPaid" value="0" min="0" placeholder="Paid amount" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+        <button id="qbSaveBtn" style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer">💾 Save & Print</button>
+      </div>
+    </div>
+
+    <!-- INVOICES LIST -->
+    <div class="page" id="page-invoices" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <h3 style="font-size:15px;margin:0">📄 All Invoices</h3>
+          <input type="text" id="invSearch" placeholder="🔍 Search..." style="flex:1;min-width:150px;padding:8px;border:1px solid #ddd;border-radius:6px">
+        </div>
+        <div style="overflow-x:auto">
+          <table id="invTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Inv #</th><th style="padding:10px;text-align:left">Customer</th><th style="padding:10px;text-align:right">Total</th><th style="padding:10px;text-align:right">Due</th><th style="padding:10px">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW INVOICE -->
+    <div class="page" id="page-newinvoice" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <h3 style="margin-bottom:10px;font-size:15px">📄 New Invoice (With Customer)</h3>
+        <p style="background:#eff6ff;border-left:3px solid #2563eb;padding:8px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#1e40af">Full customer record will be saved.</p>
+        <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Customer *</label>
+        <select id="invCustSel" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box"></select>
+        <button id="addCustBtn" style="width:100%;padding:10px;background:#e5e5e5;color:#222;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px">+ Add New Customer</button>
+        <input type="text" id="invCustName" placeholder="Selected customer" readonly style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;background:#f5f5f5;box-sizing:border-box">
+        <input type="text" id="invCustPhone" placeholder="Phone" readonly style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;background:#f5f5f5;box-sizing:border-box">
+        <h4 style="font-size:14px;margin:12px 0 8px">Add Items</h4>
+        <select id="invItemSel" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box"></select>
+        <div id="invAreaBox" style="display:none;background:#fff5f5;border:2px solid #e01515;border-radius:8px;padding:12px;margin-bottom:8px">
+          <h4 style="color:#e01515;margin:0 0 8px;font-size:13px">📐 Area Calculator</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><label style="font-size:11px;display:block">Height</label><input type="number" id="invHeight" min="0" step="0.01" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;display:block">Width</label><input type="number" id="invWidth" min="0" step="0.01" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;display:block">Rate/sqft</label><input type="number" id="invAreaPrice" min="0" step="0.01" value="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+          </div>
+          <div id="invAreaResult" style="background:#fff;padding:8px;border-radius:6px;margin-top:8px;font-weight:600;font-size:13px"></div>
+        </div>
+        <div id="invQtyBox" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label style="font-size:11px;display:block">Quantity</label><input type="number" id="invQty" value="1" min="0" step="0.01" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:11px;display:block">Price (Rs.)</label><input type="number" id="invPrice" value="0" min="0" step="0.01" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+        </div>
+        <button id="invAddBtn" style="width:100%;padding:12px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">➕ Add to Invoice</button>
+        <div style="overflow-x:auto;margin-bottom:12px">
+          <table id="invItemsTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px;text-align:left">Item</th><th style="padding:8px;text-align:right">Total</th><th style="padding:8px">Action</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="background:#f5f5f5;padding:12px;border-radius:8px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px"><span>Subtotal:</span><span id="invSubtotal">Rs. 0</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:14px;align-items:center"><span>Discount:</span><input type="number" id="invDiscount" value="0" min="0" style="width:80px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;text-align:right"></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:18px;font-weight:700;color:#e01515;border-top:2px solid #0a0a0a;margin-top:6px"><span>TOTAL:</span><span id="invTotal">Rs. 0</span></div>
+        </div>
+        <select id="invStatus" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+          <option value="unpaid">Unpaid</option><option value="paid">Paid</option><option value="partial">Partial</option>
+        </select>
+        <input type="number" id="invPaid" value="0" min="0" placeholder="Paid amount" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+        <select id="invMethod" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
+          <option>Cash</option><option>Bank</option><option>JazzCash</option><option>Easypaisa</option>
+        </select>
+        <button id="invSaveBtn" style="width:100%;padding:14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer">💾 Save Invoice</button>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div class="page" id="page-customers" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <h3 style="font-size:15px;margin:0">👥 Customers</h3>
+          <button id="addCustBtn2" style="padding:8px 14px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">+ Add</button>
+        </div>
+        <input type="text" id="custSearch" placeholder="🔍 Search customer..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
+        <div style="overflow-x:auto">
+          <table id="custTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Name</th><th style="padding:10px;text-align:left">Phone</th><th style="padding:10px;text-align:right">Pending</th><th style="padding:10px">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="page" id="page-items" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:15px;margin:0">📚 Items / Services</h3>
+          <button id="addItemBtn" style="padding:8px 14px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">+ Add</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="itemsTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Name</th><th style="padding:10px;text-align:left">Unit</th><th style="padding:10px;text-align:right">Price</th><th style="padding:10px">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="page" id="page-payments" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <h3 style="margin-bottom:12px;font-size:15px">💲 Payments</h3>
+        <div style="overflow-x:auto">
+          <table id="payTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Date</th><th style="padding:10px;text-align:left">Invoice</th><th style="padding:10px;text-align:left">Customer</th><th style="padding:10px;text-align:right">Amount</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="page" id="page-expenses" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:15px;margin:0">💰 Expenses</h3>
+          <button id="addExpBtn" style="padding:8px 14px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">+ Add</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="expTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Date</th><th style="padding:10px;text-align:left">Category</th><th style="padding:10px;text-align:right">Amount</th><th style="padding:10px">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VENDORS -->
+    <div class="page" id="page-vendors" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:15px;margin:0">🏛️ Vendors</h3>
+          <button id="addVendorBtn" style="padding:8px 14px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">+ Add</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="vendorTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:10px;text-align:left">Name</th><th style="padding:10px;text-align:left">Phone</th><th style="padding:10px">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <h3 style="margin-bottom:12px;font-size:15px">📈 Reports</h3>
+        <select id="repType" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+          <option value="sales">Sales Report</option>
+          <option value="expense">Expense Report</option>
+          <option value="profit">Profit Report</option>
+          <option value="customer">Customer-wise</option>
+        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label style="font-size:11px;display:block">From</label><input type="date" id="repFrom" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:11px;display:block">To</label><input type="date" id="repTo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box"></div>
+        </div>
+        <button id="repGenBtn" style="width:100%;padding:12px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">Generate Report</button>
+        <div id="repOutput" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:12px">
+        <h3 style="margin-bottom:12px;font-size:15px">⚙️ Business Settings</h3>
+        <label style="font-size:12px;font-weight:600;display:block;margin:8px 0 4px">Business Name</label>
+        <input type="text" id="setName" value="Design Line Agency" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+        <label style="font-size:12px;font-weight:600;display:block;margin:8px 0 4px">Phone</label>
+        <input type="text" id="setPhone" value="0320-6206454" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+        <label style="font-size:12px;font-weight:600;display:block;margin:8px 0 4px">Email</label>
+        <input type="email" id="setEmail" value="todesignlineagency@gmail.com" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+        <label style="font-size:12px;font-weight:600;display:block;margin:8px 0 4px">Address</label>
+        <input type="text" id="setAddress" value="Main Gujranwala Road, Near NBP Bank, Nokhar Mandi" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+        <button id="setSaveBtn" style="width:100%;padding:12px;background:#e01515;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px">💾 Save Settings</button>
+      </div>
+      <div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.05)">
+        <h3 style="margin-bottom:12px;font-size:15px">💾 Backup</h3>
+        <button id="exportBtn" style="width:100%;padding:10px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">⬇️ Export Backup</button>
+        <button id="importBtn" style="width:100%;padding:10px;background:#f59e0b;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">⬆️ Import Backup</button>
+        <input type="file" id="importFile" style="display:none" accept=".json">
+        <button id="clearBtn" style="width:100%;padding:10px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">🗑️ Clear All Data</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL -->
+<div id="modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:12px;width:100%;max-width:450px;max-height:90vh;overflow-y:auto">
+    <div style="background:#0a0a0a;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-radius:12px 12px 0 0">
+      <h3 id="modalTitle" style="font-size:15px;margin:0">Title</h3>
+      <button id="modalClose" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;padding:0;line-height:1">×</button>
+    </div>
+    <div id="modalBody" style="padding:16px"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:20px;left:20px;right:20px;background:#0a0a0a;color:#fff;padding:14px;border-radius:8px;font-size:14px;font-weight:600;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.2);transform:translateY(100px);opacity:0;transition:0.3s;z-index:1000"></div>
+
+<script src="app.js?v=4"></script>
+</body>
+</html>
