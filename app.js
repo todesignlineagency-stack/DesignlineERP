@@ -1,5 +1,5 @@
-// Design Line Manager - Complete Version with all features
-var STORAGE_KEY = 'dlm_v4';
+// Design Line Manager - Complete with Shop Daily Sale
+var STORAGE_KEY = 'dlm_v5';
 var state = {
   business: { name: 'Design Line Agency', phone: '0320-6206454', email: 'todesignlineagency@gmail.com', address: 'Main Gujranwala Road, Near NBP Bank, Nokhar Mandi', currency: 'Rs.', prefix: 'INV' },
   users: [{ id: 'admin', name: 'Admin', username: 'admin', password: 'admin123', role: 'admin' }],
@@ -17,7 +17,8 @@ var state = {
   payments: [],
   expenses: [],
   vendors: [],
-  vendorTxns: []
+  vendorTxns: [],
+  shopSales: []  // New: Daily shop sales
 };
 
 var qbItems = [], invItems = [], currentUser = null, editId = null;
@@ -25,6 +26,7 @@ var qbItems = [], invItems = [], currentUser = null, editId = null;
 function gid() { return 'id' + Date.now() + Math.random().toString(36).substr(2, 6); }
 function money(n) { return (state.business.currency || 'Rs.') + ' ' + (Number(n) || 0).toLocaleString('en-PK', { maximumFractionDigits: 2 }); }
 function today() { return new Date().toISOString().split('T')[0]; }
+function now() { return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); }
 function fdate(s) { if (!s) return ''; var d = new Date(s); return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
 function fdatetime(s) { if (!s) return ''; var d = new Date(s); return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
 function toast(msg, type) {
@@ -50,6 +52,7 @@ function load() {
       if (d.expenses) state.expenses = d.expenses;
       if (d.vendors) state.vendors = d.vendors;
       if (d.vendorTxns) state.vendorTxns = d.vendorTxns;
+      if (d.shopSales) state.shopSales = d.shopSales;
     }
   } catch (e) {}
 }
@@ -94,9 +97,10 @@ function nav(page) {
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
   var navEl = document.querySelector('[data-page="' + page + '"]');
   if (navEl) navEl.classList.add('active');
-  var titles = { dashboard: 'DASHBOARD', quickbill: 'QUICK BILL', invoices: 'INVOICES', newinvoice: 'NEW INVOICE', payments: 'RECEIVE PAYMENTS', customers: 'CUSTOMERS', items: 'ITEMS', expenses: 'EXPENSES', vendors: 'VENDORS', vendorpay: 'VENDOR PAYMENTS', reports: 'REPORTS', settings: 'SETTINGS' };
+  var titles = { dashboard: 'DASHBOARD', shopdaily: 'SHOP DAILY SALE', quickbill: 'QUICK BILL', invoices: 'INVOICES', newinvoice: 'NEW INVOICE', payments: 'RECEIVE PAYMENTS', customers: 'CUSTOMERS', items: 'ITEMS', expenses: 'EXPENSES', vendors: 'VENDORS', vendorpay: 'VENDOR PAYMENTS', reports: 'REPORTS', settings: 'SETTINGS' };
   $('pageTitle').textContent = titles[page] || page;
   if (page === 'dashboard') renderDash();
+  if (page === 'shopdaily') renderShopDaily();
   if (page === 'invoices') renderInv();
   if (page === 'newinvoice') renderNewInv();
   if (page === 'payments') renderPayPage();
@@ -109,43 +113,37 @@ function nav(page) {
   closeSidebar();
 }
 
-// DASHBOARD with YEARLY stats
+// DASHBOARD with YEARLY stats + SHOP SALES
 function renderDash() {
   var todayStr = today();
   var monthStr = todayStr.slice(0, 7);
   var yearStr = todayStr.slice(0, 4);
   $('currentYear').textContent = yearStr;
 
-  // Today
   var todayInv = state.invoices.filter(function(i) { return i.date === todayStr; });
   var todayExp = state.expenses.filter(function(e) { return e.date === todayStr; });
-  var todaySales = todayInv.reduce(function(s, i) { return s + Number(i.total); }, 0);
+  var todayShop = state.shopSales.filter(function(s) { return s.date === todayStr; });
+  var todaySales = todayInv.reduce(function(s, i) { return s + Number(i.total); }, 0) + todayShop.reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
   var todayExpAmt = todayExp.reduce(function(s, e) { return s + Number(e.amount); }, 0);
 
-  // This Month
   var monthInv = state.invoices.filter(function(i) { return i.date && i.date.indexOf(monthStr) === 0; });
   var monthExp = state.expenses.filter(function(e) { return e.date && e.date.indexOf(monthStr) === 0; });
-  var monthSales = monthInv.reduce(function(s, i) { return s + Number(i.total); }, 0);
-  var monthPaid = monthInv.reduce(function(s, i) { return s + Number(i.paid); }, 0);
+  var monthShop = state.shopSales.filter(function(s) { return s.date && s.date.indexOf(monthStr) === 0; });
+  var monthSales = monthInv.reduce(function(s, i) { return s + Number(i.total); }, 0) + monthShop.reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
   var monthExpAmt = monthExp.reduce(function(s, e) { return s + Number(e.amount); }, 0);
   var monthProfit = monthSales - monthExpAmt;
   var monthPending = monthInv.reduce(function(s, i) { return s + Number(i.due || 0); }, 0);
 
-  // This Year
   var yearInv = state.invoices.filter(function(i) { return i.date && i.date.indexOf(yearStr) === 0; });
   var yearExp = state.expenses.filter(function(e) { return e.date && e.date.indexOf(yearStr) === 0; });
-  var yearSales = yearInv.reduce(function(s, i) { return s + Number(i.total); }, 0);
-  var yearPaid = yearInv.reduce(function(s, i) { return s + Number(i.paid); }, 0);
+  var yearShop = state.shopSales.filter(function(s) { return s.date && s.date.indexOf(yearStr) === 0; });
+  var yearSales = yearInv.reduce(function(s, i) { return s + Number(i.total); }, 0) + yearShop.reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
   var yearExpAmt = yearExp.reduce(function(s, e) { return s + Number(e.amount); }, 0);
   var yearProfit = yearSales - yearExpAmt;
-  var yearPending = yearInv.reduce(function(s, i) { return s + Number(i.due || 0); }, 0);
 
-  // All time
-  var allSales = state.invoices.reduce(function(s, i) { return s + Number(i.total); }, 0);
-  var allPaid = state.invoices.reduce(function(s, i) { return s + Number(i.paid); }, 0);
+  var allSales = state.invoices.reduce(function(s, i) { return s + Number(i.total); }, 0) + state.shopSales.reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
   var allExp = state.expenses.reduce(function(s, e) { return s + Number(e.amount); }, 0);
   var allPending = state.invoices.reduce(function(s, i) { return s + Number(i.due || 0); }, 0);
-  var vendorBal = state.vendors.reduce(function(s, v) { return s + getVendorBalance(v.id); }, 0);
 
   var cards = [
     { c: '#e01515', l: "Today's Sales", v: money(todaySales) },
@@ -157,7 +155,7 @@ function renderDash() {
     { c: '#16a34a', l: '📅 Yearly Sales', v: money(yearSales) },
     { c: '#dc2626', l: '📅 Yearly Expenses', v: money(yearExpAmt) },
     { c: '#16a34a', l: '📅 Yearly Profit', v: money(yearProfit) },
-    { c: '#f59e0b', l: '📅 Yearly Pending', v: money(yearPending) },
+    { c: '#f59e0b', l: 'All Time Pending', v: money(allPending) },
     { c: '#0a0a0a', l: '💰 All Time Sales', v: money(allSales) },
     { c: '#666', l: '💰 All Time Profit', v: money(allSales - allExp) }
   ];
@@ -166,29 +164,21 @@ function renderDash() {
     html += '<div class="dash-card" style="border-left-color:' + cards[i].c + '"><div class="lbl">' + cards[i].l + '</div><div class="val">' + cards[i].v + '</div></div>';
   }
   $('dashStats').innerHTML = html;
-
-  // Monthly chart (this year)
   renderMonthlyChart(yearStr);
-
-  // Yearly comparison chart
   renderYearlyChart();
 
-  // Recent invoices
   var recent = state.invoices.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 5);
   var tbody = document.querySelector('#recentTbl tbody');
   tbody.innerHTML = recent.length ? recent.map(function(i) {
     return '<tr><td style="padding:8px"><strong>' + i.number + '</strong></td><td style="padding:8px">' + i.customerName + '</td><td style="padding:8px"><strong>' + money(i.total) + '</strong></td><td style="padding:8px"><span class="badge badge-' + i.status + '">' + i.status + '</span></td></tr>';
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#888;padding:20px">No invoices yet</td></tr>';
 
-  // Pending customers
   var pendingByCust = {};
   state.invoices.forEach(function(i) {
     if (i.customerId && Number(i.due) > 0) {
-      if (!pendingByCust[i.customerId]) pendingByCust[i.customerId] = { name: i.customerName, phone: i.phone, total: 0, paid: 0, due: 0, count: 0 };
+      if (!pendingByCust[i.customerId]) pendingByCust[i.customerId] = { name: i.customerName, phone: i.phone, total: 0, due: 0 };
       pendingByCust[i.customerId].total += Number(i.total);
-      pendingByCust[i.customerId].paid += Number(i.paid);
       pendingByCust[i.customerId].due += Number(i.due);
-      pendingByCust[i.customerId].count++;
     }
   });
   var pendingList = Object.values(pendingByCust).sort(function(a, b) { return b.due - a.due; }).slice(0, 10);
@@ -204,21 +194,16 @@ function renderMonthlyChart(year) {
   var maxSales = 0;
   for (var m = 1; m <= 12; m++) {
     var mStr = year + '-' + String(m).padStart(2, '0');
-    var sales = state.invoices.filter(function(i) { return i.date && i.date.indexOf(mStr) === 0; }).reduce(function(s, i) { return s + Number(i.total); }, 0);
+    var sales = state.invoices.filter(function(i) { return i.date && i.date.indexOf(mStr) === 0; }).reduce(function(s, i) { return s + Number(i.total); }, 0) + state.shopSales.filter(function(s) { return s.date && s.date.indexOf(mStr) === 0; }).reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
     var expenses = state.expenses.filter(function(e) { return e.date && e.date.indexOf(mStr) === 0; }).reduce(function(s, e) { return s + Number(e.amount); }, 0);
-    var profit = sales - expenses;
-    monthData.push({ name: months[m-1], sales: sales, expenses: expenses, profit: profit });
+    monthData.push({ name: months[m-1], sales: sales, expenses: expenses, profit: sales - expenses });
     if (sales > maxSales) maxSales = sales;
   }
   var yearTotal = monthData.reduce(function(s, m) { return s + m.sales; }, 0);
   var html = '<div class="chart-container">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">';
   html += '<div><strong>Total Year Income:</strong> <span style="color:#16a34a;font-size:18px;font-weight:700">' + money(yearTotal) + '</span></div>';
-  html += '<div class="legend">';
-  html += '<div class="legend-item"><div class="legend-color" style="background:#e01515"></div> Sales</div>';
-  html += '<div class="legend-item"><div class="legend-color" style="background:#dc2626"></div> Expenses</div>';
-  html += '<div class="legend-item"><div class="legend-color" style="background:#16a34a"></div> Profit</div>';
-  html += '</div></div>';
+  html += '<div class="legend"><div class="legend-item"><div class="legend-color" style="background:#e01515"></div> Sales</div><div class="legend-item"><div class="legend-color" style="background:#dc2626"></div> Expenses</div><div class="legend-item"><div class="legend-color" style="background:#16a34a"></div> Profit</div></div></div>';
   html += '<div class="bar-chart">';
   for (var i = 0; i < monthData.length; i++) {
     var m = monthData[i];
@@ -237,7 +222,6 @@ function renderMonthlyChart(year) {
     html += '</div>';
   }
   html += '</div></div>';
-  // Table below
   html += '<table class="summary-table" style="margin-top:12px"><thead><tr><th>Month</th><th style="text-align:right">Sales</th><th style="text-align:right">Expenses</th><th style="text-align:right">Profit</th></tr></thead><tbody>';
   var totS = 0, totE = 0;
   for (var j = 0; j < monthData.length; j++) {
@@ -258,52 +242,25 @@ function renderYearlyChart() {
   var currentYear = parseInt(today().slice(0, 4));
   for (var k = 0; k < offsets.length; k++) {
     var y = (currentYear + parseInt(offsets[k])).toString();
-    var sales = state.invoices.filter(function(i) { return i.date && i.date.indexOf(y) === 0; }).reduce(function(s, i) { return s + Number(i.total); }, 0);
+    var sales = state.invoices.filter(function(i) { return i.date && i.date.indexOf(y) === 0; }).reduce(function(s, i) { return s + Number(i.total); }, 0) + state.shopSales.filter(function(s) { return s.date && s.date.indexOf(y) === 0; }).reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
     var expenses = state.expenses.filter(function(e) { return e.date && e.date.indexOf(y) === 0; }).reduce(function(s, e) { return s + Number(e.amount); }, 0);
     yearData.push({ year: y, sales: sales, expenses: expenses, profit: sales - expenses });
     if (sales > maxVal) maxVal = sales;
   }
   var html = '<div class="chart-container">';
-  html += '<div class="legend">';
-  for (var m = 0; m < yearData.length; m++) {
-    html += '<div class="legend-item"><div class="legend-color" style="background:' + (yearColors[offsets[m]] || '#666') + '"></div> ' + yearData[m].year + '</div>';
+  if (yearData.length === 0) { html += '<p style="text-align:center;color:#888;padding:20px">Select at least one year</p></div>'; $('yearlyChart').innerHTML = html; return; }
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:10px">';
+  for (var n = 0; n < yearData.length; n++) {
+    var yd = yearData[n];
+    var pct = maxVal > 0 ? (yd.sales / maxVal) * 100 : 0;
+    html += '<div style="background:#fff;padding:14px;border-radius:8px;border-left:4px solid ' + (yearColors[offsets[n]] || '#666') + '">';
+    html += '<div style="font-size:12px;color:#666;font-weight:600">YEAR ' + yd.year + '</div>';
+    html += '<div style="font-size:20px;font-weight:700;color:#0a0a0a;margin:4px 0">' + money(yd.sales) + '</div>';
+    html += '<div style="font-size:11px;color:#666">Total Sales</div>';
+    html += '<div style="height:6px;background:#e5e5e5;border-radius:3px;margin:8px 0;overflow:hidden"><div style="height:100%;background:' + (yearColors[offsets[n]] || '#666') + ';width:' + pct + '%"></div></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px"><span style="color:#dc2626">Exp: ' + money(yd.expenses) + '</span><span style="color:#16a34a;font-weight:700">Profit: ' + money(yd.profit) + '</span></div></div>';
   }
-  html += '</div>';
-  if (yearData.length === 0) {
-    html += '<p style="text-align:center;color:#888;padding:20px">Select at least one year above</p>';
-  } else {
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:10px">';
-    for (var n = 0; n < yearData.length; n++) {
-      var yd = yearData[n];
-      var pct = maxVal > 0 ? (yd.sales / maxVal) * 100 : 0;
-      html += '<div style="background:#fff;padding:14px;border-radius:8px;border-left:4px solid ' + (yearColors[offsets[n]] || '#666') + '">';
-      html += '<div style="font-size:12px;color:#666;font-weight:600">YEAR ' + yd.year + '</div>';
-      html += '<div style="font-size:20px;font-weight:700;color:#0a0a0a;margin:4px 0">' + money(yd.sales) + '</div>';
-      html += '<div style="font-size:11px;color:#666">Total Sales</div>';
-      html += '<div style="height:6px;background:#e5e5e5;border-radius:3px;margin:8px 0;overflow:hidden"><div style="height:100%;background:' + (yearColors[offsets[n]] || '#666') + ';width:' + pct + '%"></div></div>';
-      html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px"><span style="color:#dc2626">Exp: ' + money(yd.expenses) + '</span><span style="color:#16a34a;font-weight:700">Profit: ' + money(yd.profit) + '</span></div>';
-      html += '</div>';
-    }
-    html += '</div>';
-    // Comparison table
-    html += '<table class="summary-table" style="margin-top:16px"><thead><tr><th>Year</th><th style="text-align:right">Sales</th><th style="text-align:right">Expenses</th><th style="text-align:right">Profit</th><th style="text-align:right">vs Last Year</th></tr></thead><tbody>';
-    for (var p = 0; p < yearData.length; p++) {
-      var yd = yearData[p];
-      var diff = '';
-      if (p < yearData.length - 1) {
-        var prev = yearData[p].sales;
-        var curr = yearData[p-1 >= 0 ? p-1 : p].sales;
-        if (p === 0 && yearData.length > 1) { prev = yearData[1].sales; curr = yd.sales; }
-        if (prev > 0) {
-          var change = ((curr - prev) / prev * 100).toFixed(1);
-          diff = '<span style="color:' + (change >= 0 ? '#16a34a' : '#dc2626') + '">' + (change >= 0 ? '↑' : '↓') + ' ' + Math.abs(change) + '%</span>';
-        }
-      }
-      html += '<tr><td><strong>' + yd.year + '</strong></td><td style="text-align:right">' + money(yd.sales) + '</td><td style="text-align:right">' + money(yd.expenses) + '</td><td style="text-align:right"><strong style="color:' + (yd.profit >= 0 ? '#16a34a' : '#dc2626') + '">' + money(yd.profit) + '</strong></td><td style="text-align:right">' + diff + '</td></tr>';
-    }
-    html += '</tbody></table>';
-  }
-  html += '</div>';
+  html += '</div></div>';
   $('yearlyChart').innerHTML = html;
 }
 
@@ -312,16 +269,115 @@ function goToReceivePayment(name) {
   setTimeout(function() {
     var opts = $('payCustSel').options;
     for (var i = 0; i < opts.length; i++) {
-      if (opts[i].text.indexOf(name) >= 0) {
-        $('payCustSel').value = opts[i].value;
-        $('payCustSel').onchange();
-        break;
-      }
+      if (opts[i].text.indexOf(name) >= 0) { $('payCustSel').value = opts[i].value; $('payCustSel').onchange(); break; }
     }
   }, 100);
 }
 
-// QUICK BILL
+// ==================== SHOP DAILY SALE ====================
+function getTodayTotal() {
+  var date = $('shopSaleDate').value || today();
+  return state.shopSales.filter(function(s) { return s.date === date; }).reduce(function(sum, s) { return sum + Number(s.amount); }, 0);
+}
+
+function renderShopDaily() {
+  if (!$('shopSaleDate').value) $('shopSaleDate').value = today();
+  var date = $('shopSaleDate').value;
+  var search = ($('shopSaleSearch').value || '').toLowerCase();
+  var daySales = state.shopSales.filter(function(s) {
+    return s.date === date && (!search || (s.description || '').toLowerCase().indexOf(search) >= 0 || (s.note || '').toLowerCase().indexOf(search) >= 0);
+  }).sort(function(a, b) { return (b.time || '').localeCompare(a.time || ''); });
+
+  // Stats - Daily Total
+  var totalSales = daySales.reduce(function(s, x) { return s + Number(x.amount); }, 0);
+  var totalCash = daySales.filter(function(s) { return s.paymentMethod === 'Cash'; }).reduce(function(s, x) { return s + Number(x.amount); }, 0);
+  var totalBank = daySales.filter(function(s) { return s.paymentMethod === 'Bank' || s.paymentMethod === 'JazzCash' || s.paymentMethod === 'Easypaisa'; }).reduce(function(s, x) { return s + Number(x.amount); }, 0);
+  var totalPending = daySales.filter(function(s) { return s.paymentMethod === 'Pending'; }).reduce(function(s, x) { return s + Number(x.amount); }, 0);
+  var saleCount = daySales.length;
+  var statsHtml = '<div class="dash-card" style="border-left-color:#e01515"><div class="lbl">💰 Total Sales</div><div class="val">' + money(totalSales) + '</div></div>';
+  statsHtml += '<div class="dash-card green" style="border-left-color:#16a34a"><div class="lbl">💵 Cash</div><div class="val">' + money(totalCash) + '</div></div>';
+  statsHtml += '<div class="dash-card blue" style="border-left-color:#2563eb"><div class="lbl">💳 Bank/Digital</div><div class="val">' + money(totalBank) + '</div></div>';
+  statsHtml += '<div class="dash-card orange" style="border-left-color:#f59e0b"><div class="lbl">⏰ Pending</div><div class="val">' + money(totalPending) + '</div></div>';
+  statsHtml += '<div class="dash-card" style="border-left-color:#7c3aed"><div class="lbl">🧾 Total Sales Count</div><div class="val">' + saleCount + '</div></div>';
+  $('shopDailyStats').innerHTML = statsHtml;
+
+  var body = document.querySelector('#shopSaleTbl tbody');
+  body.innerHTML = daySales.length ? daySales.map(function(s, idx) {
+    return '<tr>' +
+      '<td style="padding:8px"><strong>' + (s.time || '-') + '</strong><br><small style="color:#888">Sale #' + (idx + 1) + '</small></td>' +
+      '<td style="padding:8px"><strong>' + (s.description || '-') + '</strong>' + (s.note ? '<br><small style="color:#666">' + s.note + '</small>' : '') + '</td>' +
+      '<td style="padding:8px;text-align:right"><strong style="color:#16a34a;font-size:14px">' + money(s.amount) + '</strong></td>' +
+      '<td style="padding:8px"><span class="badge ' + (s.paymentMethod === 'Cash' ? 'badge-paid' : (s.paymentMethod === 'Pending' ? 'badge-unpaid' : 'badge-partial')) + '">' + s.paymentMethod + '</span></td>' +
+      '<td style="padding:8px;white-space:nowrap">' +
+        '<button onclick="editShopSale(\'' + s.id + '\')" style="background:#f59e0b;color:#fff;border:none;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:12px;margin-right:2px">✏️</button>' +
+        (isAdmin() ? '<button onclick="delShopSale(\'' + s.id + '\')" style="background:#dc2626;color:#fff;border:none;padding:5px 8px;border-radius:4px;cursor:pointer;font-size:12px">🗑️</button>' : '') +
+      '</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:#888;padding:20px">No sales for this date. Click "+ New Sale" to add.</td></tr>';
+}
+
+function openShopSaleModal(s) {
+  editId = s ? s.id : null;
+  $('modalTitle').textContent = s ? 'Edit Sale' : 'New Shop Sale';
+  $('modalBody').innerHTML =
+    '<div class="alert alert-info" style="margin-bottom:12px">⚡ Quick entry: Just enter amount and items. No customer name needed for walk-ins!</div>' +
+    '<div class="form-group"><label>Description (items/services) *</label><input type="text" id="ssDesc" value="' + (s ? (s.description || '') : '') + '" placeholder="e.g. 2 Flex prints, 5 visiting cards" autofocus></div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="ssAmount" value="' + (s ? s.amount : '') + '" min="0" step="0.01" autofocus></div>' +
+      '<div class="form-group"><label>Payment Method</label><select id="ssMethod"><option value="Cash"' + (s && s.paymentMethod === 'Cash' ? ' selected' : '') + '>Cash</option><option value="Bank"' + (s && s.paymentMethod === 'Bank' ? ' selected' : '') + '>Bank</option><option value="JazzCash"' + (s && s.paymentMethod === 'JazzCash' ? ' selected' : '') + '>JazzCash</option><option value="Easypaisa"' + (s && s.paymentMethod === 'Easypaisa' ? ' selected' : '') + '>Easypaisa</option><option value="Pending"' + (s && s.paymentMethod === 'Pending' ? ' selected' : '') + '>Pending (Credit)</option></select></div>' +
+    '</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Date</label><input type="date" id="ssDate" value="' + (s ? s.date : today()) + '"></div>' +
+      '<div class="form-group"><label>Time</label><input type="text" id="ssTime" value="' + (s ? (s.time || now()) : now()) + '" placeholder="Auto"></div>' +
+    '</div>' +
+    '<div class="form-group"><label>Note (optional)</label><input type="text" id="ssNote" value="' + (s ? (s.note || '') : '') + '" placeholder="Any note (optional)"></div>' +
+    '<button onclick="saveShopSale()" class="btn btn-success btn-block" style="margin-top:12px">💾 Save Sale</button>';
+  $('modal').style.display = 'flex';
+}
+
+function saveShopSale() {
+  var amount = parseFloat($('ssAmount').value) || 0;
+  if (amount <= 0) { toast('Enter amount', 'error'); return; }
+  var desc = $('ssDesc').value.trim();
+  if (!desc) { toast('Enter description', 'error'); return; }
+  // Auto-generate customer name from time
+  var timeStr = $('ssTime').value || now();
+  var data = {
+    customerName: 'Walk-in #' + (state.shopSales.length + 1),
+    phone: '',
+    description: desc,
+    amount: amount,
+    paymentMethod: $('ssMethod').value,
+    date: $('ssDate').value || today(),
+    time: timeStr,
+    note: $('ssNote').value.trim()
+  };
+  if (editId) {
+    for (var i = 0; i < state.shopSales.length; i++) if (state.shopSales[i].id === editId) { state.shopSales[i] = Object.assign({}, state.shopSales[i], data); break; }
+  } else {
+    state.shopSales.push(Object.assign({ id: gid() }, data));
+  }
+  save();
+  $('modal').style.display = 'none';
+  toast('Sale saved! Total today: ' + money(getTodayTotal()), 'success');
+  renderShopDaily();
+  renderDash();
+}
+
+function editShopSale(id) {
+  var s = state.shopSales.filter(function(x) { return x.id === id; })[0];
+  if (s) openShopSaleModal(s);
+}
+
+function delShopSale(id) {
+  if (!isAdmin()) return;
+  if (!confirm('Delete this sale?')) return;
+  state.shopSales = state.shopSales.filter(function(s) { return s.id !== id; });
+  save();
+  renderShopDaily();
+  toast('Deleted', 'success');
+}
+
+// ==================== QUICK BILL ====================
 function renderQB() {
   qbItems = [];
   $('qbItem').innerHTML = '<option value="">-- Select Item --</option>' + state.items.map(function(i) { return '<option value="' + i.id + '">' + i.name + '</option>'; }).join('');
@@ -439,7 +495,7 @@ function saveQB() {
   renderQB();
 }
 
-// INVOICES
+// ==================== INVOICES ====================
 function renderInv() {
   var search = ($('invSearch').value || '').toLowerCase();
   var list = state.invoices.filter(function(i) {
@@ -450,7 +506,6 @@ function renderInv() {
     return '<tr><td style="padding:8px"><strong>' + i.number + '</strong></td><td style="padding:8px">' + i.customerName + '<br><small style="color:#888">' + fdate(i.date) + '</small></td><td style="padding:8px;text-align:right"><strong>' + money(i.total) + '</strong><br><small style="color:' + (i.due > 0 ? '#dc2626' : '#16a34a') + '">Due: ' + money(i.due) + '</small></td><td style="padding:8px;white-space:nowrap">' +
       '<button onclick="printInv(\'' + i.id + '\')" style="background:#2563eb;color:#fff;border:none;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px;margin-right:2px">🖨️</button>' +
       '<button onclick="waInv(\'' + i.id + '\')" style="background:#16a34a;color:#fff;border:none;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px;margin-right:2px">📱</button>' +
-      '<button onclick="editInv(\'' + i.id + '\')" style="background:#f59e0b;color:#fff;border:none;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px;margin-right:2px">✏️</button>' +
       (isAdmin() ? '<button onclick="delInv(\'' + i.id + '\')" style="background:#dc2626;color:#fff;border:none;padding:6px 8px;border-radius:4px;cursor:pointer;font-size:13px">🗑️</button>' : '') +
       '</td></tr>';
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#888;padding:20px">No invoices. Go to NEW INVOICE.</td></tr>';
@@ -464,10 +519,6 @@ function delInv(id) {
   save();
   renderInv();
   toast('Deleted', 'success');
-}
-
-function editInv(id) {
-  toast('Edit feature coming soon', 'success');
 }
 
 function printInv(id) {
@@ -487,15 +538,11 @@ function waInv(id) {
   window.open('https://wa.me/' + ph + '?text=' + msg, '_blank');
 }
 
-// NEW INVOICE
+// ==================== NEW INVOICE ====================
 function renderNewInv() {
   invItems = [];
-  $('invCustSel').innerHTML = '<option value="">-- Select Customer --</option><option value="__new__">+ Add New Customer</option>' + state.customers.map(function(c) {
-    return '<option value="' + c.id + '">' + c.name + (c.phone ? ' (' + c.phone + ')' : '') + '</option>';
-  }).join('');
-  $('invItemSel').innerHTML = '<option value="">-- Select Item --</option>' + state.items.map(function(i) {
-    return '<option value="' + i.id + '">' + i.name + '</option>';
-  }).join('');
+  $('invCustSel').innerHTML = '<option value="">-- Select Customer --</option><option value="__new__">+ Add New Customer</option>' + state.customers.map(function(c) { return '<option value="' + c.id + '">' + c.name + (c.phone ? ' (' + c.phone + ')' : '') + '</option>'; }).join('');
+  $('invItemSel').innerHTML = '<option value="">-- Select Item --</option>' + state.items.map(function(i) { return '<option value="' + i.id + '">' + i.name + '</option>'; }).join('');
   $('invCustName').value = '';
   $('invCustPhone').value = '';
   $('invAreaBox').classList.add('hidden');
@@ -525,7 +572,6 @@ function setupInvEvents() {
       $('invAreaPrice').value = item.price;
       $('invHeight').value = '';
       $('invWidth').value = '';
-      $('invAreaResult').textContent = 'Enter H & W';
     } else {
       $('invAreaBox').classList.add('hidden');
       $('invQtyBox').style.display = 'grid';
@@ -564,7 +610,6 @@ function addInvItem() {
     if (h <= 0 || w <= 0) { toast('Enter H & W', 'error'); return; }
     qty = h * w;
     price = parseFloat($('invAreaPrice').value) || 0;
-    if (price <= 0) { toast('Enter price', 'error'); return; }
     details = h + 'ft × ' + w + 'ft = ' + qty.toFixed(2) + ' sqft';
   } else {
     qty = parseFloat($('invQty').value) || 0;
@@ -620,18 +665,16 @@ function saveInv() {
   nav('invoices');
 }
 
-// RECEIVE PAYMENTS (NEW)
+// ==================== RECEIVE PAYMENTS ====================
 function renderPayPage() {
-  // Populate customer dropdown (only with pending dues)
   var pendingCusts = {};
   state.invoices.forEach(function(i) {
     if (i.customerId && Number(i.due) > 0) {
-      if (!pendingCusts[i.customerId]) pendingCusts[i.customerId] = { name: i.customerName, phone: i.phone, total: 0, paid: 0, due: 0, count: 0, invoices: [] };
+      if (!pendingCusts[i.customerId]) pendingCusts[i.customerId] = { name: i.customerName, phone: i.phone, total: 0, paid: 0, due: 0, count: 0 };
       pendingCusts[i.customerId].total += Number(i.total);
       pendingCusts[i.customerId].paid += Number(i.paid);
       pendingCusts[i.customerId].due += Number(i.due);
       pendingCusts[i.customerId].count++;
-      pendingCusts[i.customerId].invoices.push(i);
     }
   });
   $('payCustSel').innerHTML = '<option value="">-- Select Customer --</option>' + Object.keys(pendingCusts).map(function(id) {
@@ -670,7 +713,6 @@ $('payReceiveBtn').onclick = function() {
   if (!cust) { toast('Customer not found', 'error'); return; }
   var totalDue = custInvs.reduce(function(s, i) { return s + Number(i.due); }, 0);
   if (amount > totalDue + 0.01) { toast('Amount exceeds pending: ' + money(totalDue), 'error'); return; }
-  // Distribute payment across invoices (FIFO)
   var remaining = amount;
   for (var i = 0; i < custInvs.length && remaining > 0; i++) {
     var inv = custInvs[i];
@@ -678,17 +720,7 @@ $('payReceiveBtn').onclick = function() {
     inv.paid += pay;
     inv.due -= pay;
     inv.status = inv.due <= 0 ? 'paid' : 'partial';
-    state.payments.push({
-      id: gid(),
-      date: today(),
-      invoiceId: inv.id,
-      invoiceNumber: inv.number,
-      customerId: cid,
-      customerName: cust.name,
-      amount: pay,
-      method: $('payMethod').value,
-      note: $('payNote').value || 'Payment received'
-    });
+    state.payments.push({ id: gid(), date: today(), invoiceId: inv.id, invoiceNumber: inv.number, customerId: cid, customerName: cust.name, amount: pay, method: $('payMethod').value, note: $('payNote').value || 'Payment received' });
     remaining -= pay;
   }
   save();
@@ -700,34 +732,24 @@ function renderPayList() {
   var list = state.payments.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
   var body = document.querySelector('#payTbl tbody');
   body.innerHTML = list.length ? list.map(function(p) {
-    return '<tr><td style="padding:8px">' + fdate(p.date) + '<br><small style="color:#888">' + (fdatetime(p.date + 'T' + (p.time || '00:00'))) + '</small></td>' +
-      '<td style="padding:8px"><strong>' + p.invoiceNumber + '</strong></td>' +
-      '<td style="padding:8px">' + p.customerName + '</td>' +
-      '<td style="padding:8px"><strong style="color:#16a34a">' + money(p.amount) + '</strong></td>' +
-      '<td style="padding:8px">' + p.method + '<br><small style="color:#888">' + (p.note || '') + '</small></td>' +
-      '<td style="padding:8px">' + (isAdmin() ? '<button onclick="delPay(\'' + p.id + '\')" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">🗑️</button>' : '-') + '</td></tr>';
+    return '<tr><td style="padding:8px">' + fdate(p.date) + '</td><td style="padding:8px"><strong>' + p.invoiceNumber + '</strong></td><td style="padding:8px">' + p.customerName + '</td><td style="padding:8px"><strong style="color:#16a34a">' + money(p.amount) + '</strong></td><td style="padding:8px">' + p.method + '<br><small style="color:#888">' + (p.note || '') + '</small></td><td style="padding:8px">' + (isAdmin() ? '<button onclick="delPay(\'' + p.id + '\')" style="background:#dc2626;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px">🗑️</button>' : '-') + '</td></tr>';
   }).join('') : '<tr><td colspan="6" style="text-align:center;color:#888;padding:20px">No payments yet</td></tr>';
 }
 
 function delPay(id) {
-  if (!confirm('Delete this payment?')) return;
+  if (!confirm('Delete?')) return;
   var p = state.payments.find(function(x) { return x.id === id; });
-  if (p) {
-    var inv = state.invoices.find(function(i) { return i.id === p.invoiceId; });
-    if (inv) { inv.paid -= p.amount; inv.due += p.amount; inv.status = inv.due >= inv.total ? 'unpaid' : (inv.paid > 0 ? 'partial' : 'paid'); }
-  }
+  if (p) { var inv = state.invoices.find(function(i) { return i.id === p.invoiceId; }); if (inv) { inv.paid -= p.amount; inv.due += p.amount; inv.status = inv.due >= inv.total ? 'unpaid' : (inv.paid > 0 ? 'partial' : 'paid'); } }
   state.payments = state.payments.filter(function(x) { return x.id !== id; });
   save();
   renderPayPage();
   toast('Deleted', 'success');
 }
 
-// CUSTOMERS
+// ==================== CUSTOMERS ====================
 function renderCust() {
   var search = ($('custSearch').value || '').toLowerCase();
-  var list = state.customers.filter(function(c) {
-    return !search || c.name.toLowerCase().indexOf(search) >= 0 || (c.phone || '').indexOf(search) >= 0;
-  });
+  var list = state.customers.filter(function(c) { return !search || c.name.toLowerCase().indexOf(search) >= 0 || (c.phone || '').indexOf(search) >= 0; });
   var body = document.querySelector('#custTbl tbody');
   body.innerHTML = list.length ? list.map(function(c) {
     var invs = state.invoices.filter(function(i) { return i.customerId === c.id; });
@@ -769,7 +791,6 @@ function saveCust() {
   toast('Saved!', 'success');
   if (document.getElementById('page-customers').classList.contains('active')) renderCust();
   if (document.getElementById('page-newinvoice').classList.contains('active')) renderNewInv();
-  if (document.getElementById('page-payments').classList.contains('active')) renderPayPage();
 }
 
 function editCust(id) {
@@ -777,7 +798,7 @@ function editCust(id) {
   if (c) openCustModal(c);
 }
 
-// ITEMS
+// ==================== ITEMS ====================
 function renderItems() {
   var body = document.querySelector('#itemsTbl tbody');
   body.innerHTML = state.items.length ? state.items.map(function(i) {
@@ -824,7 +845,7 @@ function editItem(id) {
   if (i) openItemModal(i);
 }
 
-// EXPENSES
+// ==================== EXPENSES ====================
 function renderExp() {
   var body = document.querySelector('#expTbl tbody');
   var list = state.expenses.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
@@ -845,7 +866,7 @@ function delExp(id) {
 function openExpModal(e) {
   editId = e ? e.id : null;
   $('modalTitle').textContent = e ? 'Edit Expense' : 'Add Expense';
-  $('modalBody').innerHTML = '<label>Date</label><input type="date" id="exDate" value="' + (e ? e.date : today()) + '"><label>Amount *</label><input type="number" id="exAmount" value="' + (e ? e.amount : '') + '" min="0" step="0.01"><label>Category</label><select id="exCat"><option>Materials</option><option>Ink/Toner</option><option>Paper</option><option>Rent</option><option>Utilities</option><option>Salary</option><option>Transport</option><option>Other</option></select><label>Description</label><input type="text" id="exDesc" value="' + (e ? (e.description || '') : '') + '"><button onclick="saveExp()" class="btn btn-primary btn-block" style="margin-top:12px">💾 Save</button>';
+  $('modalBody').innerHTML = '<label>Date</label><input type="date" id="exDate" value="' + (e ? e.date : today()) + '"><label>Amount *</label><input type="number" id="exAmount" value="' + (e ? e.amount : '') + '" min="0" step="0.01"><label>Category</label><select id="exCat"><option>Materials</option><option>Ink/Toner</option><option>Paper</option><option>Rent</option><option>Utilities</option><option>Salary</option><option>Transport</option><option>Vendor Payment</option><option>Other</option></select><label>Description</label><input type="text" id="exDesc" value="' + (e ? (e.description || '') : '') + '"><button onclick="saveExp()" class="btn btn-primary btn-block" style="margin-top:12px">💾 Save</button>';
   $('modal').style.display = 'flex';
 }
 
@@ -869,7 +890,7 @@ function editExp(id) {
   if (e) openExpModal(e);
 }
 
-// VENDORS
+// ==================== VENDORS ====================
 function getVendorBalance(vendorId) {
   var txns = state.vendorTxns.filter(function(t) { return t.vendorId === vendorId; });
   var balance = 0;
@@ -938,11 +959,9 @@ function vendorWA(id) {
   window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent('Hello ' + v.name), '_blank');
 }
 
-// VENDOR PAYMENTS (NEW)
+// ==================== VENDOR PAYMENTS ====================
 function renderVendorPay() {
-  $('vpVendorSel').innerHTML = '<option value="">-- Select Vendor --</option>' + state.vendors.map(function(v) {
-    return '<option value="' + v.id + '">' + v.name + (v.phone ? ' (' + v.phone + ')' : '') + '</option>';
-  }).join('');
+  $('vpVendorSel').innerHTML = '<option value="">-- Select Vendor --</option>' + state.vendors.map(function(v) { return '<option value="' + v.id + '">' + v.name + (v.phone ? ' (' + v.phone + ')' : '') + '</option>'; }).join('');
   $('vpDate').value = today();
   $('vpVendorInfo').classList.add('hidden');
   $('vpDesc').value = '';
@@ -964,12 +983,7 @@ $('vpVendorSel').onchange = function() {
   $('vpPaid').textContent = money(paid);
   $('vpPending').textContent = money(pending);
   $('vpVendorInfo').classList.remove('hidden');
-  // Smart amount suggestion
-  if (pending > 0) {
-    $('vpAmount').value = pending;
-  } else {
-    $('vpAmount').value = '';
-  }
+  if (pending > 0) $('vpAmount').value = pending;
 };
 
 $('vpSaveBtn').onclick = function() {
@@ -983,36 +997,14 @@ $('vpSaveBtn').onclick = function() {
   var type = $('vpType').value;
   var method = $('vpMethod').value;
   var date = $('vpDate').value || today();
-
-  state.vendorTxns.push({
-    id: gid(),
-    date: date,
-    vendorId: vid,
-    vendorName: v.name,
-    description: desc,
-    type: type,
-    amount: amt,
-    method: method
-  });
-
-  // ✅ If it's a PAYMENT to vendor, also add to expenses so it shows in expense report
+  state.vendorTxns.push({ id: gid(), date: date, vendorId: vid, vendorName: v.name, description: desc, type: type, amount: amt, method: method });
   if (type === 'payment') {
-    state.expenses.push({
-      id: gid(),
-      date: date,
-      amount: amt,
-      category: 'Vendor Payment',
-      description: 'Payment to ' + v.name + (desc ? ' - ' + desc : ''),
-      vendorId: vid,
-      vendorName: v.name,
-      method: method
-    });
+    state.expenses.push({ id: gid(), date: date, amount: amt, category: 'Vendor Payment', description: 'Payment to ' + v.name + (desc ? ' - ' + desc : ''), vendorId: vid, vendorName: v.name, method: method });
   }
-
   save();
   toast('Transaction saved!', 'success');
   renderVendorPay();
-  $('vpVendorSel').onchange(); // refresh info
+  $('vpVendorSel').onchange();
   $('vpDesc').value = '';
   $('vpAmount').value = '';
 };
@@ -1033,7 +1025,7 @@ function delVP(id) {
   toast('Deleted', 'success');
 }
 
-// REPORTS with PDF
+// ==================== REPORTS ====================
 var currentReportHTML = '';
 var currentReportTitle = '';
 
@@ -1045,78 +1037,72 @@ function genReport() {
   var title = '';
   if (type === 'sales') {
     title = 'Sales Report';
-    var list = state.invoices.filter(function(i) { return i.date >= from && i.date <= to; }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
-    var total = list.reduce(function(s, i) { return s + Number(i.total); }, 0);
-    var paid = list.reduce(function(s, i) { return s + Number(i.paid); }, 0);
-    var due = total - paid;
-    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><p><strong>Period:</strong> ' + fdate(from) + ' to ' + fdate(to) + '</p><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px">Date</th><th style="padding:8px">Invoice</th><th style="padding:8px">Customer</th><th style="padding:8px;text-align:right">Total</th><th style="padding:8px;text-align:right">Paid</th><th style="padding:8px;text-align:right">Due</th></tr></thead><tbody>' + list.map(function(i) { return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px">' + fdate(i.date) + '</td><td style="padding:6px">' + i.number + '</td><td style="padding:6px">' + i.customerName + '</td><td style="padding:6px;text-align:right">' + money(i.total) + '</td><td style="padding:6px;text-align:right">' + money(i.paid) + '</td><td style="padding:6px;text-align:right">' + money(i.due) + '</td></tr>'; }).join('') + '</tbody><tfoot><tr style="background:#f5f5f5;font-weight:bold"><td colspan="3" style="padding:8px">TOTAL: ' + list.length + ' invoices</td><td style="padding:8px;text-align:right">' + money(total) + '</td><td style="padding:8px;text-align:right">' + money(paid) + '</td><td style="padding:8px;text-align:right">' + money(due) + '</td></tr></tfoot></table>';
+    var list = state.invoices.filter(function(i) { return i.date >= from && i.date <= to; });
+    var shopList = state.shopSales.filter(function(s) { return s.date >= from && s.date <= to; });
+    var total = list.reduce(function(s, i) { return s + Number(i.total); }, 0) + shopList.reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><p>Period: ' + fdate(from) + ' to ' + fdate(to) + ' | Total: ' + money(total) + '</p>';
   } else if (type === 'expense') {
     title = 'Expense Report';
-    var list = state.expenses.filter(function(e) { return e.date >= from && e.date <= to; }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    var list = state.expenses.filter(function(e) { return e.date >= from && e.date <= to; });
     var total = list.reduce(function(s, e) { return s + Number(e.amount); }, 0);
-    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><p><strong>Period:</strong> ' + fdate(from) + ' to ' + fdate(to) + '</p><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px">Date</th><th style="padding:8px">Category</th><th style="padding:8px">Description</th><th style="padding:8px;text-align:right">Amount</th></tr></thead><tbody>' + list.map(function(e) { return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px">' + fdate(e.date) + '</td><td style="padding:6px">' + e.category + '</td><td style="padding:6px">' + (e.description || '-') + '</td><td style="padding:6px;text-align:right">' + money(e.amount) + '</td></tr>'; }).join('') + '</tbody><tfoot><tr style="background:#f5f5f5;font-weight:bold"><td colspan="3" style="padding:8px">TOTAL EXPENSES</td><td style="padding:8px;text-align:right">' + money(total) + '</td></tr></tfoot></table>';
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><p>Total Expenses: ' + money(total) + '</p>';
   } else if (type === 'profit') {
     title = 'Profit Report';
-    var sales = state.invoices.filter(function(i) { return i.date >= from && i.date <= to; }).reduce(function(s, i) { return s + Number(i.total); }, 0);
+    var sales = state.invoices.filter(function(i) { return i.date >= from && i.date <= to; }).reduce(function(s, i) { return s + Number(i.total); }, 0) + state.shopSales.filter(function(s) { return s.date >= from && s.date <= to; }).reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
     var exp = state.expenses.filter(function(e) { return e.date >= from && e.date <= to; }).reduce(function(s, e) { return s + Number(e.amount); }, 0);
-    var profit = sales - exp;
-    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><p><strong>Period:</strong> ' + fdate(from) + ' to ' + fdate(to) + '</p><div style="background:#f5f5f5;padding:20px;border-radius:8px"><div style="display:flex;justify-content:space-between;padding:10px 0;font-size:18px"><span>Total Sales:</span><strong style="color:#16a34a">' + money(sales) + '</strong></div><div style="display:flex;justify-content:space-between;padding:10px 0;font-size:18px"><span>Total Expenses:</span><strong style="color:#dc2626">' + money(exp) + '</strong></div><hr><div style="display:flex;justify-content:space-between;padding:10px 0;font-size:22px"><span>Net Profit:</span><strong style="color:' + (profit >= 0 ? '#16a34a' : '#dc2626') + '">' + money(profit) + '</strong></div></div>';
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><p>Sales: ' + money(sales) + ' | Expenses: ' + money(exp) + ' | <strong style="color:' + (sales - exp >= 0 ? '#16a34a' : '#dc2626') + '">Profit: ' + money(sales - exp) + '</strong></p>';
+  } else if (type === 'shopsale') {
+    title = 'Shop Daily Sale Report';
+    var list = state.shopSales.filter(function(s) { return s.date >= from && s.date <= to; }).sort(function(a, b) { return b.date.localeCompare(a.date) || (b.time || '').localeCompare(a.time || ''); });
+    var total = list.reduce(function(s, x) { return s + Number(x.amount); }, 0);
+    var cash = list.filter(function(s) { return s.paymentMethod === 'Cash'; }).reduce(function(s, x) { return s + Number(x.amount); }, 0);
+    var pending = list.filter(function(s) { return s.paymentMethod === 'Pending'; }).reduce(function(s, x) { return s + Number(x.amount); }, 0);
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2>' +
+      '<div class="report-summary"><div class="item"><div class="lbl">Total Sales</div><div class="val">' + money(total) + '</div></div><div class="item"><div class="lbl">Cash</div><div class="val">' + money(cash) + '</div></div><div class="item"><div class="lbl">Pending</div><div class="val">' + money(pending) + '</div></div><div class="item"><div class="lbl">Customers</div><div class="val">' + list.length + '</div></div></div>' +
+      '<table class="summary-table" style="margin-top:12px"><thead><tr><th>Date</th><th>Time</th><th>Customer</th><th>Description</th><th>Method</th><th>Amount</th></tr></thead><tbody>' +
+      list.map(function(s) { return '<tr><td>' + fdate(s.date) + '</td><td>' + (s.time || '-') + '</td><td><strong>' + s.customerName + '</strong><br><small>' + (s.phone || '') + '</small></td><td>' + (s.description || '-') + '</td><td>' + s.paymentMethod + '</td><td style="text-align:right"><strong>' + money(s.amount) + '</strong></td></tr>'; }).join('') +
+      '</tbody></table>';
   } else if (type === 'customer') {
     title = 'Customer-wise Report';
     var stats = {};
     state.invoices.filter(function(i) { return i.date >= from && i.date <= to; }).forEach(function(i) {
-      if (!stats[i.customerName]) stats[i.customerName] = { count: 0, total: 0, paid: 0, due: 0 };
+      if (!stats[i.customerName]) stats[i.customerName] = { count: 0, total: 0, due: 0 };
       stats[i.customerName].count++;
       stats[i.customerName].total += Number(i.total);
-      stats[i.customerName].paid += Number(i.paid);
       stats[i.customerName].due += Number(i.due);
     });
     var list = Object.entries(stats).sort(function(a, b) { return b[1].total - a[1].total; });
-    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px">Customer</th><th style="padding:8px;text-align:right">Invoices</th><th style="padding:8px;text-align:right">Total</th><th style="padding:8px;text-align:right">Paid</th><th style="padding:8px;text-align:right">Due</th></tr></thead><tbody>' + list.map(function(entry) { return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px">' + entry[0] + '</td><td style="padding:6px;text-align:right">' + entry[1].count + '</td><td style="padding:6px;text-align:right">' + money(entry[1].total) + '</td><td style="padding:6px;text-align:right">' + money(entry[1].paid) + '</td><td style="padding:6px;text-align:right">' + money(entry[1].due) + '</td></tr>'; }).join('') + '</tbody></table>';
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><table class="summary-table"><thead><tr><th>Customer</th><th style="text-align:right">Invoices</th><th style="text-align:right">Total</th><th style="text-align:right">Due</th></tr></thead><tbody>' + list.map(function(e) { return '<tr><td>' + e[0] + '</td><td style="text-align:right">' + e[1].count + '</td><td style="text-align:right">' + money(e[1].total) + '</td><td style="text-align:right">' + money(e[1].due) + '</td></tr>'; }).join('') + '</tbody></table>';
   } else if (type === 'vendor') {
     title = 'Vendor-wise Report';
     var vStats = {};
     state.vendorTxns.filter(function(t) { return t.date >= from && t.date <= to; }).forEach(function(t) {
-      if (!vStats[t.vendorName]) vStats[t.vendorName] = { purchases: 0, payments: 0, balance: 0 };
+      if (!vStats[t.vendorName]) vStats[t.vendorName] = { purchases: 0, payments: 0 };
       if (t.type === 'purchase') vStats[t.vendorName].purchases += Number(t.amount);
       else vStats[t.vendorName].payments += Number(t.amount);
     });
-    for (var vn in vStats) vStats[vn].balance = vStats[vn].purchases - vStats[vn].payments;
-    var list = Object.entries(vStats).sort(function(a, b) { return b[1].purchases - a[1].purchases; });
-    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px">Vendor</th><th style="padding:8px;text-align:right">Purchases</th><th style="padding:8px;text-align:right">Payments</th><th style="padding:8px;text-align:right">Balance</th></tr></thead><tbody>' + list.map(function(entry) { return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px">' + entry[0] + '</td><td style="padding:6px;text-align:right">' + money(entry[1].purchases) + '</td><td style="padding:6px;text-align:right">' + money(entry[1].payments) + '</td><td style="padding:6px;text-align:right"><strong style="color:' + (entry[1].balance > 0 ? '#dc2626' : '#16a34a') + '">' + money(Math.abs(entry[1].balance)) + '</strong></td></tr>'; }).join('') + '</tbody></table>';
+    var list = Object.entries(vStats);
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><table class="summary-table"><thead><tr><th>Vendor</th><th style="text-align:right">Purchases</th><th style="text-align:right">Payments</th><th style="text-align:right">Balance</th></tr></thead><tbody>' + list.map(function(e) { return '<tr><td>' + e[0] + '</td><td style="text-align:right">' + money(e[1].purchases) + '</td><td style="text-align:right">' + money(e[1].payments) + '</td><td style="text-align:right">' + money(e[1].purchases - e[1].payments) + '</td></tr>'; }).join('') + '</tbody></table>';
   } else if (type === 'item') {
-    title = 'Item-wise Sales Report';
+    title = 'Item-wise Report';
     var stats = {};
     state.invoices.filter(function(i) { return i.date >= from && i.date <= to; }).forEach(function(i) {
       i.items.forEach(function(it) {
-        if (!stats[it.name]) stats[it.name] = { qty: 0, revenue: 0, count: 0 };
+        if (!stats[it.name]) stats[it.name] = { qty: 0, revenue: 0 };
         stats[it.name].qty += Number(it.qty);
         stats[it.name].revenue += Number(it.total);
-        stats[it.name].count++;
       });
     });
     var list = Object.entries(stats).sort(function(a, b) { return b[1].revenue - a[1].revenue; });
-    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px">Item</th><th style="padding:8px;text-align:right">Times Sold</th><th style="padding:8px;text-align:right">Quantity</th><th style="padding:8px;text-align:right">Revenue</th></tr></thead><tbody>' + list.map(function(entry) { return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px">' + entry[0] + '</td><td style="padding:6px;text-align:right">' + entry[1].count + '</td><td style="padding:6px;text-align:right">' + entry[1].qty + '</td><td style="padding:6px;text-align:right">' + money(entry[1].revenue) + '</td></tr>'; }).join('') + '</tbody></table>';
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + '</h2><table class="summary-table"><thead><tr><th>Item</th><th style="text-align:right">Quantity</th><th style="text-align:right">Revenue</th></tr></thead><tbody>' + list.map(function(e) { return '<tr><td>' + e[0] + '</td><td style="text-align:right">' + e[1].qty + '</td><td style="text-align:right">' + money(e[1].revenue) + '</td></tr>'; }).join('') + '</tbody></table>';
   } else if (type === 'yearly') {
-    title = 'Yearly Summary Report';
+    title = 'Yearly Summary';
     var year = from.slice(0, 4);
     var yInvs = state.invoices.filter(function(i) { return i.date && i.date.indexOf(year) === 0; });
     var yExps = state.expenses.filter(function(e) { return e.date && e.date.indexOf(year) === 0; });
-    var ySales = yInvs.reduce(function(s, i) { return s + Number(i.total); }, 0);
+    var ySales = yInvs.reduce(function(s, i) { return s + Number(i.total); }, 0) + state.shopSales.filter(function(s) { return s.date && s.date.indexOf(year) === 0; }).reduce(function(s, sh) { return s + Number(sh.amount); }, 0);
     var yExp = yExps.reduce(function(s, e) { return s + Number(e.amount); }, 0);
-    var yProfit = ySales - yExp;
-    var yPaid = yInvs.reduce(function(s, i) { return s + Number(i.paid); }, 0);
-    var yDue = ySales - yPaid;
-    // Monthly breakdown
-    var monthly = {};
-    for (var m = 1; m <= 12; m++) {
-      var mStr = year + '-' + String(m).padStart(2, '0');
-      var mInvs = yInvs.filter(function(i) { return i.date.indexOf(mStr) === 0; });
-      var mExps = yExps.filter(function(e) { return e.date.indexOf(mStr) === 0; });
-      var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      monthly[mStr] = { name: monthNames[m-1], sales: mInvs.reduce(function(s, i) { return s + Number(i.total); }, 0), expenses: mExps.reduce(function(s, e) { return s + Number(e.amount); }, 0) };
-    }
-    html = '<h2 style="margin:0 0 12px;color:#e01515">Yearly Summary - ' + year + '</h2><div style="background:#f5f5f5;padding:16px;border-radius:8px;margin-bottom:16px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><strong>Total Sales:</strong><br><span style="font-size:20px;color:#16a34a">' + money(ySales) + '</span></div><div><strong>Total Expenses:</strong><br><span style="font-size:20px;color:#dc2626">' + money(yExp) + '</span></div><div><strong>Total Paid:</strong><br><span style="font-size:18px;color:#16a34a">' + money(yPaid) + '</span></div><div><strong>Total Pending:</strong><br><span style="font-size:18px;color:#dc2626">' + money(yDue) + '</span></div><div style="grid-column:span 2;border-top:2px solid #0a0a0a;padding-top:10px;margin-top:8px"><strong>Net Profit:</strong><br><span style="font-size:24px;color:' + (yProfit >= 0 ? '#16a34a' : '#dc2626') + '">' + money(yProfit) + '</span></div></div></div><h3>Monthly Breakdown</h3><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a0a0a;color:#fff"><th style="padding:8px">Month</th><th style="padding:8px;text-align:right">Sales</th><th style="padding:8px;text-align:right">Expenses</th><th style="padding:8px;text-align:right">Profit</th></tr></thead><tbody>' + Object.keys(monthly).map(function(k) { var m = monthly[k]; var p = m.sales - m.expenses; return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px">' + m.name + '</td><td style="padding:6px;text-align:right">' + money(m.sales) + '</td><td style="padding:6px;text-align:right">' + money(m.expenses) + '</td><td style="padding:6px;text-align:right"><strong style="color:' + (p >= 0 ? '#16a34a' : '#dc2626') + '">' + money(p) + '</strong></td></tr>'; }).join('') + '</tbody></table>';
+    html = '<h2 style="margin:0 0 12px;color:#e01515">' + title + ' - ' + year + '</h2><div class="report-summary"><div class="item"><div class="lbl">Sales</div><div class="val" style="color:#16a34a">' + money(ySales) + '</div></div><div class="item"><div class="lbl">Expenses</div><div class="val" style="color:#dc2626">' + money(yExp) + '</div></div><div class="item"><div class="lbl">Profit</div><div class="val" style="color:' + (ySales - yExp >= 0 ? '#16a34a' : '#dc2626') + '">' + money(ySales - yExp) + '</div></div></div>';
   }
   $('repOutput').innerHTML = html;
   currentReportHTML = html;
@@ -1124,21 +1110,19 @@ function genReport() {
 }
 
 function printReport() {
-  if (!currentReportHTML) { toast('Generate report first', 'error'); return; }
+  if (!currentReportHTML) { toast('Generate first', 'error'); return; }
   var w = window.open('', '_blank');
-  w.document.write('<html><head><title>' + currentReportTitle + ' - ' + state.business.name + '</title><style>body{font-family:Arial;padding:30px;color:#000;font-size:12px}.h{text-align:center;border-bottom:3px solid #e01515;padding-bottom:8px;margin-bottom:20px}.h h1{color:#e01515;margin:0;font-size:24px}.h p{margin:3px 0;font-size:11px}table{width:100%;border-collapse:collapse;margin:15px 0}th{background:#000;color:#fff;padding:8px;text-align:left;font-size:11px}td{padding:6px;border-bottom:1px solid #ddd}.ft{text-align:center;margin-top:30px;font-size:10px;color:#666;border-top:1px dashed #ccc;padding-top:8px}</style></head><body><div class="h"><h1>' + state.business.name + '</h1><p>' + state.business.address + '</p><p>Phone: ' + state.business.phone + ' | Email: ' + state.business.email + '</p></div><h2>' + currentReportTitle + '</h2>' + currentReportHTML + '<div class="ft">Generated on: ' + fdate(today()) + ' | ' + state.business.name + '</div><div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:12px 30px;background:#e01515;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Print Now</button></div></body></html>');
+  w.document.write('<html><head><title>' + currentReportTitle + '</title><style>body{font-family:Arial;padding:30px;font-size:12px}.h{text-align:center;border-bottom:3px solid #e01515;padding-bottom:8px;margin-bottom:20px}.h h1{color:#e01515;margin:0;font-size:24px}table{width:100%;border-collapse:collapse;margin:15px 0}th{background:#000;color:#fff;padding:8px;text-align:left}td{padding:6px;border-bottom:1px solid #ddd}.report-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.report-summary .item{background:#f5f5f5;padding:10px;border-left:3px solid #e01515}.ft{text-align:center;margin-top:30px;font-size:10px;color:#666;border-top:1px dashed #ccc;padding-top:8px}@media print{.no-print{display:none}}</style></head><body><div class="h"><h1>' + state.business.name + '</h1><p>' + state.business.address + '</p><p>Phone: ' + state.business.phone + '</p></div><h2>' + currentReportTitle + '</h2>' + currentReportHTML + '<div class="ft">Generated: ' + fdate(today()) + '</div><div class="no-print" style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:12px 30px;background:#e01515;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Print Now</button></div></body></html>');
   w.document.close();
 }
 
 function downloadPDF() {
-  if (!currentReportHTML) { toast('Generate report first', 'error'); return; }
-  var w = window.open('', '_blank');
-  w.document.write('<html><head><title>' + currentReportTitle + ' - ' + state.business.name + '</title><style>body{font-family:Arial;padding:30px;color:#000;font-size:12px}.h{text-align:center;border-bottom:3px solid #e01515;padding-bottom:8px;margin-bottom:20px}.h h1{color:#e01515;margin:0;font-size:24px}.h p{margin:3px 0;font-size:11px}table{width:100%;border-collapse:collapse;margin:15px 0}th{background:#000;color:#fff;padding:8px;text-align:left;font-size:11px}td{padding:6px;border-bottom:1px solid #ddd}.ft{text-align:center;margin-top:30px;font-size:10px;color:#666;border-top:1px dashed #ccc;padding-top:8px}@media print{.no-print{display:none}}</style></head><body><div class="h"><h1>' + state.business.name + '</h1><p>' + state.business.address + '</p><p>Phone: ' + state.business.phone + ' | Email: ' + state.business.email + '</p></div><h2>' + currentReportTitle + '</h2>' + currentReportHTML + '<div class="ft">Generated on: ' + fdate(today()) + ' | ' + state.business.name + '</div><div class="no-print" style="text-align:center;margin-top:20px;background:#f5f5f5;padding:15px;border-radius:8px"><h3>📄 Save as PDF</h3><p>Press <strong>Ctrl+P</strong> (or Cmd+P on Mac) → Select <strong>"Save as PDF"</strong> as destination → Click Save</p><button onclick="window.print()" style="padding:12px 30px;background:#e01515;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;margin-top:10px">🖨️ Open Print Dialog</button></div></body></html>');
-  w.document.close();
-  setTimeout(function() { w.print(); }, 500);
+  if (!currentReportHTML) { toast('Generate first', 'error'); return; }
+  printReport();
+  setTimeout(function() { alert('Print dialog khulega. "Save as PDF" select karein destination mein.'); }, 1000);
 }
 
-// SETTINGS
+// ==================== SETTINGS ====================
 function saveSettings() {
   state.business.name = $('setName').value.trim() || 'Design Line Agency';
   state.business.phone = $('setPhone').value.trim();
@@ -1167,7 +1151,7 @@ function clearAll() {
   location.reload();
 }
 
-// PRINT
+// ==================== PRINT ====================
 function printBill(title, data) {
   var itemsHtml = data.items.map(function(it) {
     return '<tr><td style="padding:6px;border-bottom:1px solid #ddd"><strong>' + it.name + '</strong><br><small>' + (it.details || '') + '</small></td><td style="padding:6px;text-align:center">' + it.qty.toFixed(2) + ' ' + it.unit + '</td><td style="padding:6px;text-align:right">' + money(it.price) + '</td><td style="padding:6px;text-align:right"><strong>' + money(it.total) + '</strong></td></tr>';
@@ -1184,7 +1168,7 @@ function printBill(title, data) {
   setTimeout(function() { w.print(); }, 300);
 }
 
-// INIT
+// ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', function() {
   load();
   $('loginBtn').onclick = doLogin;
@@ -1204,19 +1188,16 @@ document.addEventListener('DOMContentLoaded', function() {
   $('addItemBtn').onclick = function() { openItemModal(); };
   $('addExpBtn').onclick = function() { openExpModal(); };
   $('addVendorBtn').onclick = function() { openVendorModal(); };
+  $('addShopSaleBtn').onclick = function() { openShopSaleModal(); };
+  $('shopSaleDate').onchange = renderShopDaily;
+  $('shopSaleSearch').oninput = renderShopDaily;
   $('repGenBtn').onclick = genReport;
   $('repPDFBtn').onclick = downloadPDF;
   $('repPrintBtn').onclick = printReport;
-
-  // Yearly chart checkboxes
   document.querySelectorAll('.yearChk').forEach(function(chk) {
     chk.addEventListener('change', function() {
       var checked = document.querySelectorAll('.yearChk:checked').length;
-      if (checked > 3) {
-        this.checked = false;
-        toast('Maximum 3 years', 'warning');
-        return;
-      }
+      if (checked > 3) { this.checked = false; toast('Maximum 3 years', 'warning'); return; }
       if (typeof renderYearlyChart === 'function') renderYearlyChart();
     });
   });
