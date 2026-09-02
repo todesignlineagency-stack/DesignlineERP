@@ -102,13 +102,13 @@ table tbody tr:hover { background: #f9f9f9; }
 .dash-card .lbl { font-size: 10px; color: #666; font-weight: 600; text-transform: uppercase; }
 .dash-card .val { font-size: 15px; font-weight: 700; margin-top: 2px; word-break: break-word; }
 
-.chart-container { background: #f9f9f9; border-radius: 8px; padding: 12px; margin-top: 8px; }
-.bar-chart { display: flex; align-items: flex-end; height: 180px; gap: 6px; padding: 8px 0; border-bottom: 2px solid #ddd; position: relative; }
-.bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-.bar-fill { width: 100%; background: linear-gradient(180deg, #e01515 0%, #b01010 100%); border-radius: 4px 4px 0 0; min-height: 2px; transition: all 0.3s; position: relative; min-width: 20px; max-width: 60px; }
-.bar-fill:hover { opacity: 0.8; }
-.bar-label { font-size: 11px; color: #666; font-weight: 600; text-align: center; }
-.bar-value { font-size: 10px; color: #0a0a0a; font-weight: 700; text-align: center; word-break: break-all; max-width: 60px; }
+.chart-container { background: #f9f9f9; border-radius: 8px; padding: 14px; margin-top: 8px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 4px; padding: 8px 0; border-bottom: 2px solid #ddd; position: relative; overflow-x: auto; }
+.bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.bar-fill { background: linear-gradient(180deg, #e01515 0%, #b01010 100%); border-radius: 4px 4px 0 0; min-height: 4px; transition: all 0.3s; min-width: 20px; max-width: 60px; width: 70% !important; }
+.bar-fill:hover { opacity: 0.8; transform: scaleY(1.05); }
+.bar-label { font-size: 11px; color: #666; font-weight: 600; text-align: center; margin-top: 4px; }
+.bar-value { font-size: 9px; color: #0a0a0a; font-weight: 700; text-align: center; word-break: break-all; max-width: 60px; line-height: 1.2; }
 .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee; }
 .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
 .legend-color { width: 12px; height: 12px; border-radius: 3px; }
@@ -130,6 +130,7 @@ table tbody tr:hover { background: #f9f9f9; }
     <input type="password" id="loginPass" placeholder="Password">
     <button id="loginBtn" class="btn btn-primary btn-block btn-lg">LOGIN</button>
     <p id="loginError" style="color:#dc2626;font-size:13px;margin-top:10px;min-height:18px"></p>
+    <a href="#" id="forgotPassLink" style="display:block;margin-top:10px;font-size:13px;color:#2563eb;text-decoration:none">🔑 Forgot Password?</a>
     <p style="color:#888;font-size:12px;margin-top:16px;padding:10px;background:#f5f5f5;border-radius:6px">
       First time? Use: <strong>admin</strong> / <strong>admin123</strong>
     </p>
@@ -225,14 +226,14 @@ table tbody tr:hover { background: #f9f9f9; }
             <input type="date" id="shopSaleDate">
           </div>
           <div class="form-group">
-            <label>🔍 Search Customer</label>
-            <input type="text" id="shopSaleSearch" placeholder="Search by name or phone...">
+            <label>🔍 Search Description</label>
+            <input type="text" id="shopSaleSearch" placeholder="Search by description or note...">
           </div>
         </div>
         <div class="dash-stats" id="shopDailyStats" style="margin-bottom:12px"></div>
         <div class="table-wrap">
           <table id="shopSaleTbl">
-            <thead><tr><th>Time</th><th>Customer</th><th>Items/Services</th><th>Amount</th><th>Payment</th><th>Note</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Time</th><th>Description</th><th>Amount</th><th>Payment</th><th>Actions</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -507,6 +508,17 @@ table tbody tr:hover { background: #f9f9f9; }
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <div class="card">
+        <h3>🔑 Change Password</h3>
+        <label>Current Password</label>
+        <input type="password" id="oldPass" placeholder="Enter current password">
+        <label>New Password</label>
+        <input type="password" id="newPass" placeholder="Enter new password (min 4 chars)">
+        <label>Confirm New Password</label>
+        <input type="password" id="confirmPass" placeholder="Re-enter new password">
+        <button id="changePassBtn" class="btn btn-primary btn-block" style="margin-top:10px">🔒 Change Password</button>
+        <p style="font-size:11px;color:#666;margin-top:8px">💡 Forgot your password? Use "Forgot Password" on the login screen.</p>
+      </div>
+      <div class="card">
         <h3>⚙️ Business Settings</h3>
         <label>Business Name</label>
         <input type="text" id="setName" value="Design Line Agency">
@@ -519,11 +531,29 @@ table tbody tr:hover { background: #f9f9f9; }
         <button id="setSaveBtn" class="btn btn-primary btn-block" style="margin-top:10px">💾 Save Settings</button>
       </div>
       <div class="card">
+        <h3>☁️ Google Sheets Cloud Sync (Mobile + PC)</h3>
+        <div id="cloudStatusEl" style="margin-bottom:10px"></div>
+        <label>Google Apps Script Web App URL</label>
+        <input type="text" id="gScriptUrl" placeholder="https://script.google.com/macros/s/AKfy...../exec">
+        <button id="saveScriptUrl" class="btn btn-primary btn-block" style="margin-top:10px">☁️ Save & Reload</button>
+        <p style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">
+          👉 Setup: Create Google Sheet → Extensions → Apps Script → paste code → Deploy as Web App → paste URL here.<br>
+          <strong>One-time setup. Then data syncs automatically between Mobile and PC!</strong>
+        </p>
+      </div>
+      <div class="card">
         <h3>💾 Backup & Restore</h3>
-        <button id="exportBtn" class="btn btn-success btn-block" style="margin-bottom:8px">⬇️ Export Backup</button>
-        <button id="importBtn" class="btn btn-warning btn-block" style="margin-bottom:8px">⬆️ Import Backup</button>
+        <button id="exportBtn" class="btn btn-success btn-block" style="margin-bottom:8px">⬇️ Export Backup (Download File)</button>
+        <button id="importBtn" class="btn btn-warning btn-block" style="margin-bottom:8px">⬆️ Import Backup (Upload File)</button>
         <input type="file" id="importFile" style="display:none" accept=".json">
         <button id="clearBtn" class="btn btn-danger btn-block">🗑️ Clear All Data</button>
+      </div>
+
+      <div class="card">
+        <h3>🔄 Auto-Backup History (Last 5)</h3>
+        <p style="font-size:12px;color:#666;margin-bottom:10px">System automatically saves your data after every change. You can restore from any backup below.</p>
+        <div id="autoBackupList"></div>
+        <button id="createBackupBtn" class="btn btn-primary btn-block" style="margin-top:10px">💾 Create Backup Now</button>
       </div>
     </div>
 
@@ -544,6 +574,6 @@ table tbody tr:hover { background: #f9f9f9; }
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>
