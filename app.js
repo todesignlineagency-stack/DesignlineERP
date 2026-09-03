@@ -1,5 +1,5 @@
-// Design Line Manager - Google Sheets Sync Version v15
-var STORAGE_KEY = 'dlm_v15';
+// Design Line Manager - Google Sheets Sync Version v17
+var STORAGE_KEY = 'dlm_v17';
 var GOOGLE_SCRIPT_URL = ''; // ⭐ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
 
 var state = {
@@ -43,28 +43,51 @@ function $(id) { return document.getElementById(id); }
 async function cloudGet(sheet) {
   if (!GOOGLE_SCRIPT_URL) return null;
   try {
-    var res = await fetch(GOOGLE_SCRIPT_URL + '?action=get&sheet=' + sheet);
+    var res = await fetch(GOOGLE_SCRIPT_URL + '?action=get&sheet=' + sheet, {
+      method: 'GET',
+      redirect: 'follow'
+    });
     var data = await res.json();
-    return data.data || [];
-  } catch (e) { return null; }
+    if (data && data.error) { console.error('Cloud error [' + sheet + ']:', data.error); return null; }
+    return (data && data.data) || [];
+  } catch (e) {
+    console.error('cloudGet error for', sheet, ':', e);
+    return null;
+  }
 }
 
 async function cloudSave(sheet, data) {
   if (!GOOGLE_SCRIPT_URL) return false;
   try {
     var url = GOOGLE_SCRIPT_URL + '?action=save&sheet=' + sheet + '&data=' + encodeURIComponent(JSON.stringify(data));
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    var res = await fetch(url, { method: 'GET', redirect: 'follow' });
+    var result = await res.json();
+    if (result && result.error) { console.error('Cloud save error [' + sheet + ']:', result.error); return false; }
+    console.log('☁️ Saved to cloud [' + sheet + ']:', data.id || data.name);
     return true;
-  } catch (e) { return false; }
+  } catch (e) {
+    console.error('cloudSave error for', sheet, ':', e);
+    return false;
+  }
+}
+
+function queueCloudSave(sheet, data) {
+  // Add to pending queue - will be sent on next sync cycle
+  if (!window._pendingPush) window._pendingPush = [];
+  window._pendingPush.push({ sheet: sheet, data: data });
+  window._cloudDirty = true;
 }
 
 async function cloudDelete(sheet, id) {
   if (!GOOGLE_SCRIPT_URL) return false;
   try {
     var url = GOOGLE_SCRIPT_URL + '?action=delete&sheet=' + sheet + '&data=' + encodeURIComponent(JSON.stringify({ id: id }));
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    var res = await fetch(url, { method: 'GET', redirect: 'follow' });
     return true;
-  } catch (e) { return false; }
+  } catch (e) {
+    console.error('cloudDelete error:', e);
+    return false;
+  }
 }
 
 function save() {
@@ -74,6 +97,11 @@ function save() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persistData));
     if (GOOGLE_SCRIPT_URL) localStorage.setItem('dlm_gurl', GOOGLE_SCRIPT_URL);
     if (Math.random() < 0.2) createAutoBackup();
+    // Mark dirty so auto-sync knows to push
+    if (GOOGLE_SCRIPT_URL) {
+      window._cloudDirty = true;
+      window._lastChange = Date.now();
+    }
   } catch (e) {}
 }
 
@@ -97,25 +125,67 @@ function load() {
   } catch (e) {}
 }
 
-async function loadFromCloud() {
+async function loadFromCloud(silent) {
   if (!GOOGLE_SCRIPT_URL) return;
   try {
+    // If local data changed, push to cloud first
+    if (window._cloudDirty) {
+      window._cloudDirty = false;
+      var pending = window._pendingPush || [];
+      for (var p = 0; p < pending.length; p++) {
+        var item = pending[p];
+        await cloudSave(item.sheet, item.data);
+      }
+      window._pendingPush = [];
+    }
     var customers = await cloudGet('Customers');
-    if (customers && customers.length) { state.customers = customers; }
+    if (customers && customers.length) { mergeData('customers', customers); }
     var items = await cloudGet('Items');
-    if (items && items.length) { state.items = items; }
+    if (items && items.length) { mergeData('items', items); }
     var invoices = await cloudGet('Invoices');
-    if (invoices && invoices.length) { state.invoices = invoices; }
+    if (invoices && invoices.length) { mergeData('invoices', invoices); }
     var expenses = await cloudGet('Expenses');
-    if (expenses && expenses.length) { state.expenses = expenses; }
+    if (expenses && expenses.length) { mergeData('expenses', expenses); }
     var vendors = await cloudGet('Vendors');
-    if (vendors && vendors.length) { state.vendors = vendors; }
+    if (vendors && vendors.length) { mergeData('vendors', vendors); }
     var vendorTxns = await cloudGet('VendorTxns');
-    if (vendorTxns && vendorTxns.length) { state.vendorTxns = vendorTxns; }
+    if (vendorTxns && vendorTxns.length) { mergeData('vendorTxns', vendorTxns); }
     var shopSales = await cloudGet('ShopSales');
-    if (shopSales && shopSales.length) { state.shopSales = shopSales; }
+    if (shopSales && shopSales.length) { mergeData('shopSales', shopSales); }
     save();
+    if (!silent) {
+      var activePage = document.querySelector('.page.active');
+      if (activePage) {
+        var pageId = activePage.id.replace('page-', '');
+        nav(pageId);
+      }
+      toast('☁️ Synced from cloud!', 'sync');
+    }
   } catch (e) { console.log('Cloud load error:', e); }
+}
+
+// Merge cloud data with local (cloud wins, but keep local-only items)
+function mergeData(key, cloudData) {
+  if (!state[key]) state[key] = [];
+  var localMap = {};
+  for (var i = 0; i < state[key].length; i++) {
+    if (state[key][i].id) localMap[state[key][i].id] = state[key][i];
+  }
+  var cloudMap = {};
+  for (var j = 0; j < cloudData.length; j++) {
+    if (cloudData[j].id) cloudMap[cloudData[j].id] = cloudData[j];
+  }
+  // Cloud data + local-only items (still save missing to cloud)
+  var merged = [];
+  for (var k in cloudMap) { if (cloudMap.hasOwnProperty(k)) merged.push(cloudMap[k]); }
+  for (var l in localMap) {
+    if (localMap.hasOwnProperty(l) && !cloudMap[l]) {
+      // Local item not in cloud - keep locally but try to push to cloud
+      merged.push(localMap[l]);
+      if (GOOGLE_SCRIPT_URL) cloudSave(key.charAt(0).toUpperCase() + key.slice(1), localMap[l]);
+    }
+  }
+  state[key] = merged;
 }
 
 function isAdmin() { return currentUser && currentUser.role === 'admin'; }
@@ -881,8 +951,11 @@ function applySettings() {
   $('gScriptUrl').value = GOOGLE_SCRIPT_URL;
   var status = $('cloudStatusEl');
   if (status) {
-    if (GOOGLE_SCRIPT_URL) status.innerHTML = '<div style="background:#d1fae5;padding:10px;border-radius:6px;color:#065f46">✅ Cloud Sync Active - Mobile & PC sync via Google Sheets</div>';
-    else status.innerHTML = '<div style="background:#fef3c7;padding:10px;border-radius:6px;color:#92400e">⚠️ Setup Google Script URL below for Mobile+PC sync</div>';
+    if (GOOGLE_SCRIPT_URL) {
+      status.innerHTML = '<div style="background:#d1fae5;padding:12px;border-radius:6px;color:#065f46"><strong>✅ Cloud Sync Active</strong><br><small>URL: ' + GOOGLE_SCRIPT_URL.substring(0, 60) + '...<br>Auto-sync every 30 sec. Use "Sync Now" button below.</small></div>';
+    } else {
+      status.innerHTML = '<div style="background:#fef3c7;padding:10px;border-radius:6px;color:#92400e">⚠️ Setup Google Script URL below for Mobile+PC sync</div>';
+    }
   }
   renderAutoBackups();
 }
@@ -893,6 +966,35 @@ function saveScriptUrl() {
   else localStorage.removeItem('dlm_gurl');
   toast('Cloud URL saved! Reloading...', 'success');
   setTimeout(function() { location.reload(); }, 800);
+}
+
+async function syncNow() {
+  if (!GOOGLE_SCRIPT_URL) { toast('Setup Cloud URL first', 'error'); return; }
+  toast('🔄 Syncing from cloud...', 'sync');
+  await loadFromCloud(false);
+}
+
+async function pushAllToCloud() {
+  if (!GOOGLE_SCRIPT_URL) { toast('Setup Cloud URL first', 'error'); return; }
+  if (!confirm('Upload ALL your current data to Google Sheet?\n\nThis will overwrite cloud data for these records.')) return;
+  toast('⬆️ Pushing data to cloud...', 'sync');
+  var maps = [
+    { key: 'customers', sheet: 'Customers' },
+    { key: 'items', sheet: 'Items' },
+    { key: 'invoices', sheet: 'Invoices' },
+    { key: 'expenses', sheet: 'Expenses' },
+    { key: 'vendors', sheet: 'Vendors' },
+    { key: 'vendorTxns', sheet: 'VendorTxns' },
+    { key: 'shopSales', sheet: 'ShopSales' }
+  ];
+  for (var i = 0; i < maps.length; i++) {
+    var m = maps[i];
+    var arr = state[m.key] || [];
+    for (var j = 0; j < arr.length; j++) {
+      await cloudSave(m.sheet, arr[j]);
+    }
+  }
+  toast('✅ All data pushed to cloud!', 'success');
 }
 
 function clearAll() {
@@ -1073,6 +1175,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   $('custSearch').oninput = renderCust;
   $('setSaveBtn').onclick = saveSettings;
   $('saveScriptUrl').onclick = saveScriptUrl;
+  var syncBtn = $('syncNowBtn'); if (syncBtn) syncBtn.onclick = syncNow;
+  var pushBtn = $('pushAllBtn'); if (pushBtn) pushBtn.onclick = pushAllToCloud;
   $('clearBtn').onclick = clearAll;
   $('exportBtn').onclick = exportBackup;
   $('importBtn').onclick = importBackup;
@@ -1087,6 +1191,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   }; });
   setupQBEvents();
   setupInvEvents();
-  if (GOOGLE_SCRIPT_URL) { await loadFromCloud(); }
-  setInterval(function() { if (GOOGLE_SCRIPT_URL) loadFromCloud(); }, 60000);
+  if (GOOGLE_SCRIPT_URL) { await loadFromCloud(true); }
+  // Real-time sync every 5 seconds when app is active
+  setInterval(function() { if (GOOGLE_SCRIPT_URL && currentUser && !document.hidden) loadFromCloud(true); }, 5000);
+  // Also sync when user returns to the tab/window
+  document.addEventListener('visibilitychange', function() { if (!document.hidden && GOOGLE_SCRIPT_URL && currentUser) { loadFromCloud(true); toast('☁️ Auto-synced!', 'sync'); } });
+  window.addEventListener('focus', function() { if (GOOGLE_SCRIPT_URL && currentUser) loadFromCloud(true); });
 });
