@@ -536,9 +536,14 @@ table tbody tr:hover { background: #f9f9f9; }
         <label>Google Apps Script Web App URL</label>
         <input type="text" id="gScriptUrl" placeholder="https://script.google.com/macros/s/AKfy...../exec">
         <button id="saveScriptUrl" class="btn btn-primary btn-block" style="margin-top:10px">☁️ Save & Reload</button>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="syncNowBtn" class="btn btn-success" style="flex:1">🔄 Sync Now</button>
+          <button id="pushAllBtn" class="btn btn-warning" style="flex:1">⬆️ Push All to Cloud</button>
+        </div>
         <p style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">
-          👉 Setup: Create Google Sheet → Extensions → Apps Script → paste code → Deploy as Web App → paste URL here.<br>
-          <strong>One-time setup. Then data syncs automatically between Mobile and PC!</strong>
+          👉 <strong>Sync Now</strong> = Pull all data from Google Sheet (mobile↔PC sync).<br>
+          👉 <strong>Push All</strong> = Upload all your current data to Google Sheet.<br>
+          ⏰ Auto-sync runs every 30 seconds.
         </p>
       </div>
       <div class="card">
@@ -574,6 +579,6 @@ table tbody tr:hover { background: #f9f9f9; }
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
 
-<script src="app.js?v=15"></script>
+<script src="app.js?v=17"></script>
 </body>
 </html>
