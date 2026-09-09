@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Design Line Agency ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">DL</div>
+      <div><strong>Design Line</strong><span>Agency ERP</span></div>
+    </div>
+    <nav id="nav">
+      <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+      <button class="nav-btn" data-view="orders">Orders</button>
+      <button class="nav-btn" data-view="quotations">Quotations</button>
+      <button class="nav-btn" data-view="customers">Customers</button>
+      <button class="nav-btn" data-view="expenses">Expenses</button>
+      <button class="nav-btn" data-view="vendors">Vendors</button>
+      <button class="nav-btn" data-view="reports">Reports</button>
+      <button class="nav-btn admin-only" data-view="settings">Settings</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <label class="field mini"><span>Role</span><select id="roleSelect"><option value="admin">CEO / Admin</option><option value="staff">Staff</option></select></label>
+      <button id="themeToggle" class="ghost full">Toggle Dark / Light</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><button class="mobile-menu" id="mobileMenu">☰</button><h1 id="pageTitle">Dashboard</h1><p id="todayText"></p></div>
+      <div class="top-actions"><span class="badge" id="pendingBadge">0 Pending Bills</span><button class="primary" id="quickOrderBtn">+ New Order</button></div>
+    </header>
+
+    <section class="view active" id="dashboardView">
+      <div class="cards" id="dashboardCards"></div>
+      <div class="grid-2">
+        <div class="panel"><div class="panel-head"><h3>Recent Orders</h3><button class="link-btn" data-jump="orders">View all</button></div><div id="recentOrders"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Pending Bills</h3></div><div id="pendingBills"></div></div>
+      </div>
+      <div class="panel"><div class="panel-head"><h3>Service Sales</h3><span class="muted">Current data</span></div><div id="serviceBars"></div></div>
+    </section>
+
+    <section class="view" id="ordersView">
+      <div class="toolbar"><input id="orderSearch" placeholder="Search order/customer/service..." /><select id="orderStatusFilter"><option value="">All Status</option><option>New</option><option>In Progress</option><option>Ready</option><option>Delivered</option></select><button class="primary" id="newOrderBtn">+ Add Order</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Service</th><th>Total</th><th>Advance</th><th>Balance</th><th>Status</th><th>Due</th><th>Action</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+    </section>
+
+    <section class="view" id="quotationsView">
+      <div class="toolbar"><select id="quoteTypeFilter"><option value="">All Quotation Types</option><option value="offset">Offset / Packaging</option><option value="digital">Digital Print</option></select><button class="primary" id="newQuoteBtn">+ New Quotation</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Quote</th><th>Customer</th><th>Type</th><th>Item</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead><tbody id="quotesBody"></tbody></table></div>
+    </section>
+
+    <section class="view" id="customersView">
+      <div class="toolbar"><input id="customerSearch" placeholder="Search customer or phone..." /><button class="primary" id="newCustomerBtn">+ Add Customer</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Total Sales</th><th>Pending</th><th>WhatsApp</th></tr></thead><tbody id="customersBody"></tbody></table></div>
+    </section>
+
+    <section class="view" id="expensesView">
+      <div class="toolbar"><button class="primary" id="newExpenseBtn">+ Add Expense</button></div>
+      <div class="cards compact" id="expenseCards"></div>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid By</th><th class="admin-only">Action</th></tr></thead><tbody id="expensesBody"></tbody></table></div>
+    </section>
+
+    <section class="view" id="vendorsView">
+      <div class="toolbar"><button class="primary" id="newVendorBtn">+ Add Vendor</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Vendor</th><th>Phone</th><th>Jobs</th><th>Total Cost</th><th>Pending Payment</th><th>Notes</th></tr></thead><tbody id="vendorsBody"></tbody></table></div>
+    </section>
+
+    <section class="view" id="reportsView">
+      <div class="toolbar"><select id="reportRange"><option value="today">Today</option><option value="week">This Week</option><option value="month" selected>This Month</option><option value="all">All Time</option></select><button class="ghost" id="exportCsvBtn">Export CSV</button></div>
+      <div class="cards" id="reportCards"></div>
+      <div class="grid-2"><div class="panel"><h3>Profit by Service</h3><div id="profitService"></div></div><div class="panel"><h3>Outstanding Receivables</h3><div id="receivables"></div></div></div>
+    </section>
+
+    <section class="view admin-only" id="settingsView">
+      <div class="panel settings-grid">
+        <label class="field"><span>Agency Name</span><input id="agencyName" value="Design Line Agency" /></label>
+        <label class="field"><span>Phone</span><input id="agencyPhone" placeholder="03xx xxxxxxx" /></label>
+        <label class="field"><span>Office Hours</span><input id="officeHours" value="08:00 AM - 09:00 PM" /></label>
+        <label class="field"><span>Default Advance %</span><input id="defaultAdvance" type="number" value="75" /></label>
+        <button class="primary" id="saveSettingsBtn">Save Settings</button>
+        <button class="danger" id="resetDemoBtn">Reset Demo Data</button>
+      </div>
+      <div class="panel"><h3>Google Sheets Backend</h3><p class="muted">This package includes <b>Code.gs</b>. Deploy it as a Google Apps Script Web App and paste the Web App URL below.</p><label class="field"><span>Apps Script Web App URL</span><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec" /></label><button class="primary" id="saveApiBtn">Save Backend URL</button><p class="muted" id="backendStatus"></p></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">Form</h2><button id="closeModal">✕</button></div><form id="dynamicForm"></form></div></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
