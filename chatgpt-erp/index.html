@@ -8,20 +8,20 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260910-v7-1">
+<link rel="stylesheet" href="styles.css?v=20260910-v8">
 </head>
 <body>
 <div id="fatalError" class="fatal-error hidden"></div>
 <div class="app-shell">
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Version 7.1</span></div></div>
+    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Version 8</span></div></div>
     <nav>
       <button class="nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button><button class="nav-btn" data-view="orders"><span>▤</span> Orders</button><button class="nav-btn" data-view="quotations"><span>▧</span> Quotations</button><button class="nav-btn" data-view="customers"><span>◉</span> Customers</button><button class="nav-btn" data-view="expenses"><span>↘</span> Expenses</button><button class="nav-btn" data-view="vendors"><span>◇</span> Vendors</button><button class="nav-btn" data-view="reports"><span>⌁</span> Reports</button><button class="nav-btn admin-only" data-view="settings"><span>⚙</span> Settings</button>
     </nav>
     <div class="sidebar-bottom"><label class="field mini"><span>Login View</span><select id="roleSelect"><option value="admin">CEO / Admin</option><option value="staff">Staff</option></select></label><button id="themeToggle" class="ghost full">☾ Dark / Light</button></div>
   </aside>
   <main class="main">
-    <header class="topbar"><div class="page-heading"><button class="mobile-menu" id="mobileMenu">☰</button><div><h1 id="pageTitle">Dashboard</h1><p id="todayText">Loading...</p></div></div><div class="top-actions"><span class="sync-pill" id="storagePill">● Local Save</span><span class="badge" id="pendingBadge">0 Pending</span><button class="primary" id="quickOrderBtn">+ New Order</button></div></header>
+    <header class="topbar"><div class="page-heading"><button class="mobile-menu" id="mobileMenu">☰</button><div><h1 id="pageTitle">Dashboard</h1><p id="todayText">Loading...</p></div></div><div class="top-actions"><span class="sync-pill" id="storagePill">● Login Required</span><span class="badge" id="pendingBadge">0 Pending</span><button class="primary" id="quickOrderBtn">+ New Order</button></div></header>
     <section class="view active" id="dashboardView">
       <div class="hero-strip"><div><span class="eyebrow">BUSINESS CONTROL CENTER</span><h2>Design Line Agency</h2><p>Orders, customer balances, vendor payments, expenses and profit — in one place.</p></div><div class="quick-actions"><button data-jump="orders">Orders</button><button data-jump="quotations">Quotations</button><button data-jump="expenses">Expenses</button><button data-jump="customers">Customers</button></div></div>
       <div class="cards cards-4" id="dashboardCards"></div><div class="ops-grid" id="opsCards"></div>
@@ -39,10 +39,14 @@
   </main>
 </div>
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><span class="section-kicker" id="modalKicker">DESIGN LINE ERP</span><h2 id="modalTitle">Form</h2></div><button id="closeModal">✕</button></div><form id="dynamicForm"></form></div></div><div class="toast" id="toast"></div>
-<script src="app.js?v=20260910-v7-1"></script>
-<script src="invoice-v7.js?v=20260910-v7-1"></script>
-<script src="dropdown-manager.js?v=20260910-v7-1"></script>
-<script src="workflow-v7.js?v=20260910-v7-1"></script>
-<script src="v7-final-fixes.js?v=20260910-v7-1"></script>
-<script src="accounting-v7-1.js?v=20260910-v7-1"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-v8.js?v=20260910-v8"></script>
+<script src="app.js?v=20260910-v8"></script>
+<script src="invoice-v7.js?v=20260910-v8"></script>
+<script src="dropdown-manager.js?v=20260910-v8"></script>
+<script src="workflow-v7.js?v=20260910-v8"></script>
+<script src="v7-final-fixes.js?v=20260910-v8"></script>
+<script src="accounting-v7-1.js?v=20260910-v8"></script>
 </body></html>
