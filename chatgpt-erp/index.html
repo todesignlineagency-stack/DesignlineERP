@@ -8,13 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260910-v6-final">
+<link rel="stylesheet" href="styles.css?v=20260910-v7">
 </head>
 <body>
 <div id="fatalError" class="fatal-error hidden"></div>
 <div class="app-shell">
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Version 6</span></div></div>
+    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Version 7</span></div></div>
     <nav>
       <button class="nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button><button class="nav-btn" data-view="orders"><span>▤</span> Orders</button><button class="nav-btn" data-view="quotations"><span>▧</span> Quotations</button><button class="nav-btn" data-view="customers"><span>◉</span> Customers</button><button class="nav-btn" data-view="expenses"><span>↘</span> Expenses</button><button class="nav-btn" data-view="vendors"><span>◇</span> Vendors</button><button class="nav-btn" data-view="reports"><span>⌁</span> Reports</button><button class="nav-btn admin-only" data-view="settings"><span>⚙</span> Settings</button>
     </nav>
@@ -38,5 +38,9 @@
     <section class="view admin-only" id="settingsView"><div class="grid-2 equal"><div class="panel settings-grid"><div class="full-span"><span class="section-kicker">COMPANY</span><h3>Business Settings</h3></div><label class="field"><span>Agency Name</span><input id="agencyName"></label><label class="field"><span>Phone / WhatsApp</span><input id="agencyPhone"></label><label class="field"><span>Address</span><input id="agencyAddress"></label><label class="field"><span>Office Hours</span><input id="officeHours"></label><label class="field"><span>Default Advance %</span><input id="defaultAdvance" type="number"></label><label class="field"><span>Currency</span><input value="PKR / Rs" disabled></label><div class="full-span form-actions left"><button class="primary" id="saveSettingsBtn">Save Settings</button><button class="danger" id="resetDemoBtn">Reset Demo Data</button></div></div><div class="panel"><span class="section-kicker">DATABASE</span><h3>Google Sheets Backend</h3><p class="muted">ERP currently works immediately with browser storage. For multi-user live data, connect the Apps Script Web App URL from <b>Code.gs</b>.</p><label class="field"><span>Apps Script Web App URL</span><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><div class="form-actions left"><button class="primary" id="saveApiBtn">Save Backend URL</button><button class="ghost" id="testApiBtn">Test URL</button></div><div class="backend-box" id="backendStatus"></div></div></div><div class="panel"><span class="section-kicker">DATA</span><h3>Backup</h3><p class="muted">Download a JSON backup before major changes.</p><div class="form-actions left"><button class="ghost" id="backupBtn">Download Backup</button></div></div></section>
   </main>
 </div>
-<div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><span class="section-kicker" id="modalKicker">DESIGN LINE ERP</span><h2 id="modalTitle">Form</h2></div><button id="closeModal">✕</button></div><form id="dynamicForm"></form></div></div><div class="toast" id="toast"></div><script src="app.js?v=20260910-v6-final"></script><script src="invoice-v6.js?v=20260910-v6-final"></script><script src="dropdown-manager.js?v=20260910-v6-final"></script><script src="workflow-v6-final.js?v=20260910-v6-final"></script>
+<div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><span class="section-kicker" id="modalKicker">DESIGN LINE ERP</span><h2 id="modalTitle">Form</h2></div><button id="closeModal">✕</button></div><form id="dynamicForm"></form></div></div><div class="toast" id="toast"></div>
+<script src="app.js?v=20260910-v7"></script>
+<script src="invoice-v7.js?v=20260910-v7"></script>
+<script src="dropdown-manager.js?v=20260910-v7"></script>
+<script src="workflow-v7.js?v=20260910-v7"></script>
 </body></html>
