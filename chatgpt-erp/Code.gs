@@ -1,4 +1,5 @@
 /** Design Line Agency ERP - Google Apps Script backend
+ * Version 7: supports nested lineItems by storing objects/arrays as JSON text.
  * Setup:
  * 1) Create a Google Sheet.
  * 2) Extensions > Apps Script, paste this file.
@@ -11,7 +12,7 @@ const TABS = ['Settings','Customers','Vendors','Orders','Payments','Quotations',
 function doGet(e){
   try{
     if (e && e.parameter && e.parameter.action === 'data') return json(readAll());
-    return json({ok:true,app:'Design Line Agency ERP',message:'Backend is running'});
+    return json({ok:true,app:'Design Line Agency ERP',version:7,message:'Backend is running'});
   } catch(err){ return json({ok:false,error:String(err)}); }
 }
 
@@ -56,8 +57,21 @@ function readAll(){
 }
 
 function ensureTabs(ss){ TABS.forEach(n=>{ if(!ss.getSheetByName(n)) ss.insertSheet(n); }); }
-function writeObject(sh,obj){ sh.clearContents(); const rows=Object.entries(obj); if(rows.length) sh.getRange(1,1,rows.length,2).setValues(rows); }
-function writeRows(sh,rows){ sh.clearContents(); if(!rows.length)return; const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))]; sh.getRange(1,1,1,keys.length).setValues([keys]); sh.getRange(2,1,rows.length,keys.length).setValues(rows.map(r=>keys.map(k=>r[k]??''))); sh.setFrozenRows(1); }
-function readObject(sh){ const v=sh.getDataRange().getValues(); const o={}; v.forEach(r=>{if(r[0]!==''&&r[0]!=null)o[r[0]]=r[1];}); return o; }
-function readRows(sh){ const v=sh.getDataRange().getValues(); if(v.length<2)return[]; const h=v[0]; return v.slice(1).filter(r=>r.some(x=>x!==''&&x!=null)).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]]))); }
+function encodeCell(v){
+  if(v === null || v === undefined) return '';
+  if(Array.isArray(v) || (typeof v === 'object' && !(v instanceof Date))) return JSON.stringify(v);
+  return v;
+}
+function decodeCell(v){
+  if(typeof v !== 'string') return v;
+  const t=v.trim();
+  if((t.startsWith('{')&&t.endsWith('}')) || (t.startsWith('[')&&t.endsWith(']'))){
+    try{return JSON.parse(t)}catch(e){}
+  }
+  return v;
+}
+function writeObject(sh,obj){ sh.clearContents(); const rows=Object.entries(obj).map(([k,v])=>[k,encodeCell(v)]); if(rows.length) sh.getRange(1,1,rows.length,2).setValues(rows); }
+function writeRows(sh,rows){ sh.clearContents(); if(!rows.length)return; const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))]; sh.getRange(1,1,1,keys.length).setValues([keys]); sh.getRange(2,1,rows.length,keys.length).setValues(rows.map(r=>keys.map(k=>encodeCell(r[k])))); sh.setFrozenRows(1); }
+function readObject(sh){ const v=sh.getDataRange().getValues(); const o={}; v.forEach(r=>{if(r[0]!==''&&r[0]!=null)o[r[0]]=decodeCell(r[1]);}); return o; }
+function readRows(sh){ const v=sh.getDataRange().getValues(); if(v.length<2)return[]; const h=v[0]; return v.slice(1).filter(r=>r.some(x=>x!==''&&x!=null)).map(r=>Object.fromEntries(h.map((k,i)=>[k,decodeCell(r[i])]))); }
 function json(obj){ return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
