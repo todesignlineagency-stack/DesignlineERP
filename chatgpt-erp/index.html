@@ -8,13 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260911-v8-4">
+<link rel="stylesheet" href="styles.css?v=20260911-v8-5">
 </head>
 <body>
 <div id="fatalError" class="fatal-error hidden"></div>
 <div class="app-shell">
   <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Version 8.4</span></div></div>
+    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Version 8.5</span></div></div>
     <nav>
       <button class="nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button><button class="nav-btn" data-view="orders"><span>▤</span> Orders</button><button class="nav-btn" data-view="quotations"><span>▧</span> Quotations</button><button class="nav-btn" data-view="customers"><span>◉</span> Customers</button><button class="nav-btn" data-view="expenses"><span>↘</span> Expenses</button><button class="nav-btn" data-view="vendors"><span>◇</span> Vendors</button><button class="nav-btn" data-view="reports"><span>⌁</span> Reports</button><button class="nav-btn admin-only" data-view="settings"><span>⚙</span> Settings</button>
     </nav>
@@ -35,19 +35,19 @@
     <section class="view" id="expensesView"><div class="cards cards-4 compact" id="expenseCards"></div><div class="toolbar"><input id="expenseSearch" placeholder="Search expense..."><select id="expenseCategoryFilter"><option value="">All Categories</option></select><button class="primary" id="newExpenseBtn">+ Add Expense</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid By</th><th>Reference</th><th class="admin-only">Action</th></tr></thead><tbody id="expensesBody"></tbody></table></div></section>
     <section class="view" id="vendorsView"><div class="section-summary" id="vendorSummary"></div><div class="toolbar"><input id="vendorSearch" placeholder="Search vendor / phone..."><button class="primary" id="newVendorBtn">+ Add Vendor</button></div><div class="table-wrap"><table><thead><tr><th>Vendor</th><th>Phone</th><th>Work Type</th><th>Jobs</th><th>Total Cost</th><th>Paid</th><th>Payable</th><th>Action</th></tr></thead><tbody id="vendorsBody"></tbody></table></div></section>
     <section class="view" id="reportsView"><div class="toolbar"><select id="reportRange"><option value="today">Today</option><option value="week">This Week</option><option value="month" selected>This Month</option><option value="all">All Time</option></select><button class="ghost" id="exportCsvBtn">Export Orders CSV</button></div><div class="cards cards-4" id="reportCards"></div><div class="grid-2 equal"><div class="panel"><div class="panel-head"><div><span class="section-kicker">PROFITABILITY</span><h3>Profit by Service</h3></div></div><div id="profitService"></div></div><div class="panel"><div class="panel-head"><div><span class="section-kicker">RECEIVABLES</span><h3>Outstanding Customers</h3></div></div><div id="receivables"></div></div></div><div class="grid-2 equal"><div class="panel"><div class="panel-head"><div><span class="section-kicker">EXPENSES</span><h3>Expense Breakdown</h3></div></div><div id="expenseBreakdown"></div></div><div class="panel"><div class="panel-head"><div><span class="section-kicker">PRODUCTION</span><h3>Vendor Cost Breakdown</h3></div></div><div id="vendorBreakdown"></div></div></div></section>
-    <section class="view admin-only" id="settingsView"><div class="grid-2 equal"><div class="panel settings-grid"><div class="full-span"><span class="section-kicker">COMPANY</span><h3>Business Settings</h3></div><label class="field"><span>Agency Name</span><input id="agencyName"></label><label class="field"><span>Phone / WhatsApp</span><input id="agencyPhone"></label><label class="field"><span>Address</span><input id="agencyAddress"></label><label class="field"><span>Office Hours</span><input id="officeHours"></label><label class="field"><span>Default Advance %</span><input id="defaultAdvance" type="number"></label><label class="field"><span>Currency</span><input value="PKR / Rs" disabled></label><div class="full-span form-actions left"><button class="primary" id="saveSettingsBtn">Save Settings</button><button class="danger" id="resetDemoBtn">Reset Demo Data</button></div></div><div class="panel"><span class="section-kicker">DATABASE</span><h3>Firebase / Firestore</h3><p class="muted">Version 8 uses Firebase Authentication and Cloud Firestore for secure Boss / Staff access and live ERP data.</p><div class="backend-box" id="backendStatus">Firebase is the primary database.</div></div></div><div class="panel"><span class="section-kicker">DATA</span><h3>Backup</h3><p class="muted">Download a JSON backup before major changes.</p><div class="form-actions left"><button class="ghost" id="backupBtn">Download Backup</button></div></div></section>
+    <section class="view admin-only" id="settingsView"><div class="grid-2 equal"><div class="panel settings-grid"><div class="full-span"><span class="section-kicker">COMPANY</span><h3>Business Settings</h3></div><label class="field"><span>Agency Name</span><input id="agencyName"></label><label class="field"><span>Phone / WhatsApp</span><input id="agencyPhone"></label><label class="field"><span>Address</span><input id="agencyAddress"></label><label class="field"><span>Office Hours</span><input id="officeHours"></label><label class="field"><span>Default Advance %</span><input id="defaultAdvance" type="number"></label><label class="field"><span>Currency</span><input value="PKR / Rs" disabled></label><div class="full-span form-actions left"><button class="primary" id="saveSettingsBtn">Save Settings</button><button class="danger" id="resetDemoBtn">Reset Demo Data</button></div></div><div class="panel"><span class="section-kicker">DATABASE</span><h3>Firebase / Firestore</h3><p class="muted">Version 8.5 uses Firebase Authentication and Cloud Firestore for secure Boss / Staff access and live ERP data.</p><div class="backend-box" id="backendStatus">Firebase is the primary database.</div></div></div><div class="panel"><span class="section-kicker">DATA</span><h3>Backup</h3><p class="muted">Download a JSON backup before major changes.</p><div class="form-actions left"><button class="ghost" id="backupBtn">Download Backup</button></div></div></section>
   </main>
 </div>
 <div class="modal" id="modal"><div class="modal-card"><div class="modal-head"><div><span class="section-kicker" id="modalKicker">DESIGN LINE ERP</span><h2 id="modalTitle">Form</h2></div><button id="closeModal">✕</button></div><form id="dynamicForm"></form></div></div><div class="toast" id="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="firebase-v8.js?v=20260911-v8-4"></script>
-<script src="auth-v8-3-fix.js?v=20260911-v8-4"></script>
-<script src="app.js?v=20260911-v8-4"></script>
-<script src="invoice-v7.js?v=20260911-v8-4"></script>
-<script src="dropdown-manager.js?v=20260911-v8-4"></script>
-<script src="workflow-v7.js?v=20260911-v8-4"></script>
-<script src="v7-final-fixes.js?v=20260911-v8-4"></script>
-<script src="accounting-v7-1.js?v=20260911-v8-4"></script>
+<script src="firebase-v8.js?v=20260911-v8-5"></script>
+<script src="auth-v8-3-fix.js?v=20260911-v8-5"></script>
+<script src="app.js?v=20260911-v8-5"></script>
+<script src="invoice-v7.js?v=20260911-v8-5"></script>
+<script src="dropdown-manager.js?v=20260911-v8-5"></script>
+<script src="workflow-v7.js?v=20260911-v8-5"></script>
+<script src="v7-final-fixes.js?v=20260911-v8-5"></script>
+<script src="accounting-v7-1.js?v=20260911-v8-5"></script>
 </body></html>
