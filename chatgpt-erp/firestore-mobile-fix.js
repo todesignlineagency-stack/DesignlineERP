@@ -19,7 +19,9 @@ try{
   async function restWhere(path,field,op,value){const ops={'==':'EQUAL','!=':'NOT_EQUAL','<':'LESS_THAN','<=':'LESS_THAN_OR_EQUAL','>':'GREATER_THAN','>=':'GREATER_THAN_OR_EQUAL'};if(!ops[op])throw new Error('Unsupported Firestore query operator');const body={structuredQuery:{from:[{collectionId:path}],where:{fieldFilter:{field:{fieldPath:field},op:ops[op],value:encQuery(value)}}}};const r=await timeoutFetch(`${base}:runQuery`,{method:'POST',headers:await authHeaders({'Content-Type':'application/json'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(`Firestore query failed (${r.status})`);const rows=await r.json();return qs(rows.filter(x=>x.document).map(x=>snap(x.document)))}
   const originalCollection=db.collection.bind(db);
   db.collection=function(path){const ref=originalCollection(path),originalDoc=ref.doc.bind(ref),originalWhere=ref.where.bind(ref);ref.get=()=>restCollection(path);ref.doc=function(id){const d=originalDoc(id);d.get=()=>restDoc(path,String(id));return d};ref.where=function(field,op,value){const q=originalWhere(field,op,value);q.get=()=>restWhere(path,field,op,value);return q};return ref};
+  const markVersion=()=>document.querySelectorAll('.v8card p').forEach(x=>{if(/Version 8\.6/.test(x.textContent))x.textContent=x.textContent.replace('Version 8.6','Version 8.8')});
+  new MutationObserver(markVersion).observe(document.documentElement,{childList:true,subtree:true});setTimeout(markVersion,0);
   window.__DL_FIRESTORE_MOBILE_FIX__='rest-v2';
-  console.info('Design Line ERP: Firestore REST fallback enabled');
+  console.info('Design Line ERP: Firestore REST fallback V8.8 enabled');
 }catch(e){console.error('Design Line ERP: Firestore mobile/REST fix failed',e)}
 })();
