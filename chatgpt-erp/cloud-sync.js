@@ -144,7 +144,7 @@ function mountUi(){
   const saved=endpoint(localDb());
   if(!localStorage.getItem(U)&&saved)rawSet.call(localStorage,U,saved);
   document.getElementById('apiUrl').value=saved;
-  document.getElementById('saveApiBtn').addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();saveAndRun()},true);
+  document.getElementById('saveApiBtn').addEventListener('click',e=>{e.preventDefault();saveAndRun()},true);
   document.getElementById('testApiBtn').addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();testCloud()},true);
   document.getElementById('pullCloudBtn').addEventListener('click',e=>{e.preventDefault();pullCloud(true)},true);
   document.getElementById('pushCloudBtn').addEventListener('click',e=>{e.preventDefault();const u=norm(document.getElementById('apiUrl').value||endpoint(localDb()));if(!u)return status('Web App link required.',true);persistEndpoint(u);const d=localDb();d?postCloud(u,d):status('ERP data abhi available nahi.',true)},true);
@@ -153,6 +153,7 @@ function mountUi(){
 }
 window.DesignLineCloud={pull:pullCloud,push:()=>{const d=localDb(),u=endpoint(d);return postCloud(u,d)},test:testCloud,saveAndRun,sheetUrl:SHEET_URL,apiUrl:DEFAULT_API_URL};
 if(!localStorage.getItem(U)&&DEFAULT_API_URL)rawSet.call(localStorage,U,DEFAULT_API_URL);
+const seed=localDb();if(seed&&!(seed.settings&&seed.settings.apiUrl)&&DEFAULT_API_URL)persistEndpoint(DEFAULT_API_URL);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountUi,{once:true});else mountUi();
 setTimeout(()=>pullCloud(false),50);
 })();
