@@ -84,7 +84,7 @@ async function pullCloud(force=false){
     const remote=r.data;remote.settings=remote.settings||{};remote.settings.apiUrl=u;
     const rt=Number(remote.settings.clientUpdatedAt||r.updatedAtMs||0),lt=Number(local?.settings?.clientUpdatedAt||0);
     if(force||!local||rt>lt){
-      internal=true;rawSet.call(localStorage,K,JSON.stringify(remote));rawSet.call(localStorage,U,u);internal=false;
+      internal=true;rawSet.call(localStorage,K,JSON.stringify(remote));rawSet.call(localStorage,U,u);internal=false;try{window.dispatchEvent(new CustomEvent('designline:cloudloaded',{detail:{updatedAt:Number(r.updatedAtMs||rt||Date.now())}}))}catch(e){};
       pill('● Cloud Loaded');status('Latest Google Sheets database load ho gaya.');
       const mark=String(r.updatedAtMs||rt||Date.now());
       if(sessionStorage.getItem(BOOT)!==mark){sessionStorage.setItem(BOOT,mark);setTimeout(()=>location.reload(),150)}
@@ -155,5 +155,5 @@ window.DesignLineCloud={pull:pullCloud,push:()=>{const d=localDb(),u=endpoint(d)
 if(!localStorage.getItem(U)&&DEFAULT_API_URL)rawSet.call(localStorage,U,DEFAULT_API_URL);
 const seed=localDb();if(seed&&!(seed.settings&&seed.settings.apiUrl)&&DEFAULT_API_URL)persistEndpoint(DEFAULT_API_URL);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mountUi,{once:true});else mountUi();
-setTimeout(()=>pullCloud(false),50);
+setTimeout(()=>pullCloud(true),80);
 })();
