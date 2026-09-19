@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const K='designlineERP_v2',$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const N=x=>Number(x)||0,R=x=>'Rs '+N(x).toLocaleString('en-PK'),E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const D=(d=new Date())=>{const p=x=>String(x).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`},ID=p=>`${p}-${Date.now().toString().slice(-7)}${Math.floor(Math.random()*90+10)}`;
+const D=(d=new Date())=>{const p=x=>String(x).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`},ID=p=>window.DesignLineIds?.next(p)||`${p}-${Date.now()}`;
 const read=()=>{try{return JSON.parse(localStorage.getItem(K))||{}}catch{return{}}},write=db=>localStorage.setItem(K,JSON.stringify(db));
 const SERVICES=['Flex Printing','Wallpaper + Fitting','Digital Print','Photocopy Black','Offset / Packaging','Sublimation','Passport Photos','ID / Document Print','Wedding Cards','Graphic Design','Frames','Stamps','Other'];
 const C=(db,id)=>(db.customers||[]).find(x=>x.id===id)||{name:'Unknown',phone:'',area:''},V=(db,id)=>(db.vendors||[]).find(x=>x.id===id)||{name:'Unknown Vendor',phone:'',workType:''};
