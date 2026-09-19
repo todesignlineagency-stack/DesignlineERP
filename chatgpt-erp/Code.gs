@@ -1,6 +1,9 @@
 const SHEET_ID = '1zm0XvdY6zYREUIvVbHf7pRoZCnWHgandxjgObYNi4uk';
 const STATE_SHEET = 'State';
+const BACKUP_SHEET = 'Backups';
 const CHUNK_SIZE = 45000;
+const SERVER_VERSION = 22;
+const MAX_BACKUPS = 20;
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
@@ -8,10 +11,11 @@ function doGet(e) {
   let payload;
   try {
     if (action === 'ping') {
-      payload = { ok: true, service: 'DesignLine ERP Cloud', time: new Date().toISOString(), sheetId: SHEET_ID };
+      const meta = readState_();
+      payload = { ok: true, service: 'DesignLine ERP Cloud', serverVersion: SERVER_VERSION, revision: meta.revision, time: new Date().toISOString(), sheetId: SHEET_ID };
     } else if (action === 'load') {
       const meta = readState_();
-      payload = { ok: true, data: meta.data, updatedAt: meta.updatedAt, updatedAtMs: meta.updatedAtMs, schema: 1 };
+      payload = { ok: true, data: meta.data, revision: meta.revision, updatedAt: meta.updatedAt, updatedAtMs: meta.updatedAtMs, schema: 2, serverVersion: SERVER_VERSION };
     } else {
       payload = { ok: false, error: 'Unknown action' };
     }
@@ -24,11 +28,17 @@ function doGet(e) {
 function doPost(e) {
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (body.action !== 'syncAll') return output_({ ok: false, error: 'Unknown action' });
-    const result = syncAll_(body.data || {});
-    return output_({ ok: true, updatedAt: result.updatedAt, updatedAtMs: result.updatedAtMs, schema: 1 });
+    if (body.action !== 'syncAll') return output_({ ok: false, error: 'Unknown action', serverVersion: SERVER_VERSION });
+    const clientVersion = Number(body.clientVersion || 0);
+    if (clientVersion < 22) {
+      return output_({ ok: false, error: 'Old ERP client blocked. Refresh ERP to V22.', code: 'CLIENT_TOO_OLD', serverVersion: SERVER_VERSION });
+    }
+    const result = syncAll_(body.data || {}, body.baseRevision);
+    return output_({ ok: true, revision: result.revision, updatedAt: result.updatedAt, updatedAtMs: result.updatedAtMs, schema: 2, serverVersion: SERVER_VERSION });
   } catch (err) {
-    return output_({ ok: false, error: String(err && err.message ? err.message : err) });
+    const msg = String(err && err.message ? err.message : err);
+    const conflict = msg.indexOf('REVISION_CONFLICT') === 0;
+    return output_({ ok: false, error: msg, code: conflict ? 'REVISION_CONFLICT' : 'SERVER_ERROR', serverVersion: SERVER_VERSION });
   }
 }
 
@@ -41,21 +51,32 @@ function output_(obj, callback) {
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
 
-function syncAll_(data) {
+function syncAll_(data, baseRevision) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
+    const current = readState_();
+    const currentRevision = Number(current.revision || 0);
+    if (baseRevision !== null && baseRevision !== undefined && baseRevision !== '' && Number(baseRevision) !== currentRevision) {
+      throw new Error('REVISION_CONFLICT: cloud changed from revision ' + baseRevision + ' to ' + currentRevision);
+    }
+
     data = normalizeData_(data);
     const now = new Date();
     const iso = now.toISOString();
     const ms = now.getTime();
+    const nextRevision = currentRevision + 1;
+
     data.settings = data.settings || {};
     data.settings.cloudUpdatedAt = iso;
     data.settings.storageMode = 'Google Sheets Cloud';
+    data.settings.cloudRevision = nextRevision;
+    data.settings.syncServerVersion = SERVER_VERSION;
 
-    writeState_(data, iso);
+    if (current.data) writeBackup_(current.data, currentRevision, current.updatedAt || iso);
+    writeState_(data, iso, nextRevision);
     writeReadableTabs_(data, iso);
-    return { updatedAt: iso, updatedAtMs: ms };
+    return { revision: nextRevision, updatedAt: iso, updatedAtMs: ms };
   } finally {
     lock.releaseLock();
   }
@@ -67,6 +88,7 @@ function normalizeData_(data) {
     if (!Array.isArray(out[k])) out[k] = [];
   });
   if (!out.settings || typeof out.settings !== 'object') out.settings = {};
+  if (!out.meta || typeof out.meta !== 'object') out.meta = {};
   return out;
 }
 
@@ -81,32 +103,63 @@ function sheet_(name) {
   return sh;
 }
 
-function writeState_(data, iso) {
+function writeState_(data, iso, revision) {
   const sh = sheet_(STATE_SHEET);
   sh.clearContents();
-  sh.getRange(1,1,1,4).setValues([['Chunk','JSON','UpdatedAt','Schema']]);
+  if (sh.getMaxColumns() < 5) sh.insertColumnsAfter(sh.getMaxColumns(), 5 - sh.getMaxColumns());
+  sh.getRange(1,1,1,5).setValues([['Chunk','JSON','UpdatedAt','Revision','Schema']]);
   const json = JSON.stringify(data);
   const rows = [];
   for (let i = 0, n = 1; i < json.length; i += CHUNK_SIZE, n++) {
-    rows.push([n, json.slice(i, i + CHUNK_SIZE), n === 1 ? iso : '', n === 1 ? 1 : '']);
+    rows.push([n, json.slice(i, i + CHUNK_SIZE), n === 1 ? iso : '', n === 1 ? revision : '', n === 1 ? 2 : '']);
   }
-  if (!rows.length) rows.push([1, '{}', iso, 1]);
-  sh.getRange(2,1,rows.length,4).setValues(rows);
+  if (!rows.length) rows.push([1, '{}', iso, revision, 2]);
+  sh.getRange(2,1,rows.length,5).setValues(rows);
   try { sh.hideSheet(); } catch (e) {}
 }
 
 function readState_() {
   const sh = sheet_(STATE_SHEET);
   const last = sh.getLastRow();
-  if (last < 2) return { data: null, updatedAt: '', updatedAtMs: 0 };
-  const rows = sh.getRange(2,1,last-1,4).getValues().filter(r => r[1] !== '');
+  if (last < 2) return { data: null, revision: 0, updatedAt: '', updatedAtMs: 0 };
+  const header = sh.getRange(1,1,1,Math.min(5,sh.getMaxColumns())).getValues()[0];
+  const rows = sh.getRange(2,1,last-1,Math.min(5,sh.getMaxColumns())).getValues().filter(r => r[1] !== '');
   rows.sort((a,b) => Number(a[0]) - Number(b[0]));
-  if (!rows.length) return { data: null, updatedAt: '', updatedAtMs: 0 };
+  if (!rows.length) return { data: null, revision: 0, updatedAt: '', updatedAtMs: 0 };
   const json = rows.map(r => String(r[1] || '')).join('');
   const updatedAt = String(rows[0][2] || '');
+  let revision = 0;
+  const revisionCol = header.indexOf('Revision');
+  if (revisionCol >= 0) revision = Number(rows[0][revisionCol] || 0);
   let data = null;
   try { data = JSON.parse(json); } catch (e) { throw new Error('Cloud state JSON is invalid'); }
-  return { data, updatedAt, updatedAtMs: updatedAt ? new Date(updatedAt).getTime() : Number(data && data.settings && data.settings.clientUpdatedAt || 0) };
+  return { data, revision, updatedAt, updatedAtMs: updatedAt ? new Date(updatedAt).getTime() : Number(data && data.settings && data.settings.clientUpdatedAt || 0) };
+}
+
+function writeBackup_(data, revision, savedAt) {
+  const sh = sheet_(BACKUP_SHEET);
+  if (sh.getLastRow() === 0) sh.getRange(1,1,1,5).setValues([['BackupID','Chunk','JSON','SavedAt','Revision']]);
+  const json = JSON.stringify(data || {});
+  const id = 'B-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Karachi', 'yyyyMMdd-HHmmss-SSS') + '-R' + revision;
+  const rows = [];
+  for (let i = 0, n = 1; i < json.length; i += CHUNK_SIZE, n++) rows.push([id,n,json.slice(i,i+CHUNK_SIZE),savedAt||new Date().toISOString(),revision]);
+  if (!rows.length) rows.push([id,1,'{}',savedAt||new Date().toISOString(),revision]);
+  sh.getRange(sh.getLastRow()+1,1,rows.length,5).setValues(rows);
+  trimBackups_(sh);
+  try { sh.hideSheet(); } catch (e) {}
+}
+
+function trimBackups_(sh) {
+  const last = sh.getLastRow();
+  if (last < 2) return;
+  const ids = sh.getRange(2,1,last-1,1).getValues().map(r => String(r[0]||''));
+  const order = [];
+  ids.forEach(id => { if (id && order.indexOf(id) < 0) order.push(id); });
+  if (order.length <= MAX_BACKUPS) return;
+  const remove = new Set(order.slice(0, order.length - MAX_BACKUPS));
+  for (let row = last; row >= 2; row--) {
+    if (remove.has(String(sh.getRange(row,1).getValue()||''))) sh.deleteRow(row);
+  }
 }
 
 function writeReadableTabs_(db, iso) {
