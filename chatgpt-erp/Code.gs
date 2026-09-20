@@ -173,11 +173,12 @@ function writeReadableTabs_(db, iso) {
   const payByOrder = {};
   payments.forEach(p => payByOrder[p.orderId] = n_(payByOrder[p.orderId]) + n_(p.amount));
   const orderRows = orders.map(o => {
+    const gross = grossOrderTotal_(o,'order');
     const total = orderTotal_(o,'order');
     const received = n_(o.advance) + n_(payByOrder[o.id]);
-    return [o.id||'',o.date||'',o.customerId||'',o.status||'',o.due||'',o.priority||'',items_(o).length,total,n_(o.advance),received,Math.max(0,total-received),vendorCost_(o),o.convertedFromQuote||'',o.notes||'',iso,json_(stripItems_(o))];
+    return [o.id||'',o.date||'',o.customerId||'',o.status||'',o.due||'',o.priority||'',items_(o).length,gross,n_(o.discount),total,n_(o.advance),received,Math.max(0,total-received),o.convertedFromQuote||'',o.notes||'',iso,json_(stripItems_(o))];
   });
-  writeTable_('Orders', ['OrderNo','Date','CustomerID','Status','DueDate','Priority','ItemCount','SaleTotal','Advance','Received','Balance','VendorCost','ConvertedFromQuote','Notes','CloudUpdatedAt','JSON'], orderRows);
+  writeTable_('Orders', ['OrderNo','Date','CustomerID','Status','DueDate','Priority','ItemCount','ItemsTotal','Discount','SaleTotal','Advance','Received','Balance','ConvertedFromQuote','Notes','CloudUpdatedAt','JSON'], orderRows);
 
   const orderItemRows = [];
   orders.forEach(o => items_(o).forEach((x,i) => orderItemRows.push(itemRow_(o.id||'',i+1,x,'order'))));
@@ -257,16 +258,22 @@ function offsetCost_(x) {
 function lineTotal_(x, mode) {
   x = x || {};
   const s = x.service || 'Other';
-  if (s === 'Flex Printing' || s === 'Wallpaper + Fitting') return area_(x)*n_(x.rate)+n_(x.designCharges)+n_(x.fittingCharges)+n_(x.otherCharges);
-  if (s === 'Passport Photos') return n_(x.qty)*n_(x.rate)+n_(x.retouchCharges)+n_(x.otherCharges);
-  if (s === 'ID / Document Print') return n_(x.qty)*n_(x.rate)+n_(x.designCharges)+n_(x.laminationCharges)+n_(x.otherCharges);
-  if (mode === 'quote' && s === 'Offset / Packaging' && (x.pricingMethod === 'cost' || x.quoteMethod === 'cost')) return offsetCost_(x)+n_(x.designCharges)+n_(x.otherCharges)+n_(x.desiredProfit);
-  return n_(x.qty)*n_(x.rate)+n_(x.designCharges)+n_(x.finishingCharges)+n_(x.fittingCharges)+n_(x.otherCharges);
+  const extras = n_(x.otherCharges)+n_(x.otherCharges2)+n_(x.otherCharges3);
+  if (s === 'Flex Printing' || s === 'Wallpaper + Fitting') return area_(x)*n_(x.rate)+n_(x.designCharges)+n_(x.fittingCharges)+extras;
+  if (s === 'Passport Photos') return n_(x.qty)*n_(x.rate)+n_(x.retouchCharges)+extras;
+  if (s === 'ID / Document Print') return n_(x.qty)*n_(x.rate)+n_(x.designCharges)+n_(x.laminationCharges)+extras;
+  if (mode === 'quote' && s === 'Offset / Packaging' && (x.pricingMethod === 'cost' || x.quoteMethod === 'cost')) return offsetCost_(x)+n_(x.designCharges)+extras+n_(x.desiredProfit);
+  return n_(x.qty)*n_(x.rate)+n_(x.designCharges)+n_(x.finishingCharges)+n_(x.fittingCharges)+extras;
+}
+
+function grossOrderTotal_(o, mode) {
+  const arr = items_(o);
+  return arr.reduce((a,x) => a + lineTotal_(x,mode),0);
 }
 
 function orderTotal_(o, mode) {
-  const arr = items_(o);
-  return arr.reduce((a,x) => a + lineTotal_(x,mode),0);
+  const gross = grossOrderTotal_(o,mode);
+  return mode === 'order' ? Math.max(0,gross-n_(o && o.discount)) : gross;
 }
 
 function vendorCost_(o) {
