@@ -6,8 +6,8 @@ const read=()=>{try{return JSON.parse(localStorage.getItem(K))||{}}catch(e){retu
 const lines=o=>(o?.lineItems||[]).length?o.lineItems:[o||{}];
 const flex=x=>['Flex Printing','Wallpaper + Fitting'].includes(x?.service);
 const area=x=>N(x.widthFt)&&N(x.heightFt)?N(x.widthFt)*N(x.heightFt)*Math.max(1,N(x.panels)||1):N(x.qty);
-function lineSale(x){const s=x?.service||'Other';if(flex(x))return area(x)*N(x.rate)+N(x.designCharges)+N(x.fittingCharges)+N(x.otherCharges);if(s==='Passport Photos')return N(x.qty)*N(x.rate)+N(x.retouchCharges)+N(x.otherCharges);if(s==='ID / Document Print')return N(x.qty)*N(x.rate)+N(x.designCharges)+N(x.laminationCharges)+N(x.otherCharges);return N(x.qty)*N(x.rate)+N(x.designCharges)+N(x.finishingCharges)+N(x.fittingCharges)+N(x.otherCharges)}
-const orderSale=o=>lines(o).reduce((a,l)=>a+lineSale(l),0);
+function lineSale(x){const ex=N(x.otherCharges)+N(x.otherCharges2)+N(x.otherCharges3),s=x?.service||'Other';if(flex(x))return area(x)*N(x.rate)+N(x.designCharges)+N(x.fittingCharges)+ex;if(s==='Passport Photos')return N(x.qty)*N(x.rate)+N(x.retouchCharges)+ex;if(s==='ID / Document Print')return N(x.qty)*N(x.rate)+N(x.designCharges)+N(x.laminationCharges)+ex;return N(x.qty)*N(x.rate)+N(x.designCharges)+N(x.finishingCharges)+N(x.fittingCharges)+ex}
+const orderSale=o=>Math.max(0,lines(o).reduce((a,l)=>a+lineSale(l),0)-N(o.discount));
 const orderPaid=(db,o)=>N(o.advance)+(db.payments||[]).filter(p=>p.orderId===o.id).reduce((a,p)=>a+N(p.amount),0);
 const within=(d,a,b)=>d&&d>=a&&d<=b;
 function metrics(db,from='0000-01-01',to='9999-12-31'){const os=(db.orders||[]).filter(o=>o.status!=='Cancelled'&&within(o.date,from,to)),vps=(db.vendorPayments||[]).filter(p=>within(p.date,from,to)),es=(db.expenses||[]).filter(e=>within(e.date,from,to));const sales=os.reduce((a,o)=>a+orderSale(o),0),received=os.reduce((a,o)=>a+orderPaid(db,o),0),pending=os.reduce((a,o)=>a+Math.max(0,orderSale(o)-orderPaid(db,o)),0),vendorPaid=vps.reduce((a,p)=>a+N(p.amount),0),expenses=es.reduce((a,e)=>a+N(e.amount),0),net=sales-vendorPaid-expenses;return{orders:os,vendorPayments:vps,expenseRows:es,sales,received,pending,vendorPaid,expenses,net}}
