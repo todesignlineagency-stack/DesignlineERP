@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const K='designlineERP_v2',U='designlineERP_cloud_url',P='designlineERP_pending_v22',BOOT='designlineERP_cloud_boot_v22',VERSION=22;
+const K='designlineERP_v2',U='designlineERP_cloud_url',P='designlineERP_pending_v22',BOOT='designlineERP_cloud_boot_v22',VERSION=24;
 const SHEET_URL='https://docs.google.com/spreadsheets/d/1zm0XvdY6zYREUIvVbHf7pRoZCnWHgandxjgObYNi4uk/edit';
 const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbz5XfyYCP5-fmsTP5FOHeu8_4AbNNFzwxM2Z_h-g-jxXHMtlNW_4QEJeOHOdr33Fkk6ag/exec';
 const ENTITIES=['customers','vendors','orders','payments','quotes','expenses','vendorPayments'];
@@ -75,19 +75,66 @@ async function syncMigrated(u,remote,revision){
 }
 async function bootstrap(){
  const u=endpoint(localDb());if(!u){cloudReady=true;return}persistEndpoint(u);pill('● Checking Cloud');
- try{const r=await loadRemote(u);let remote=r.data;if(remote){remote.settings=remote.settings||{};remote.settings.apiUrl=u;remote=await syncMigrated(u,remote,r.revision);writeLocal(remote);lastRevision=r.revision??lastRevision}cloudReady=true;status('Cloud database loaded safely.');pill('● Cloud Safe');const mark=String(remote?.settings?.cloudUpdatedAt||r.updatedAtMs||Date.now());if(sessionStorage.getItem(BOOT)!==mark){sessionStorage.setItem(BOOT,mark);setTimeout(()=>location.reload(),180)}else scheduleFlush(50)}
- catch(e){cloudReady=true;pill('● Cloud Offline',true);status('Cloud load fail hua. Local copy safe hai; online hote hi retry karein.',true);scheduleFlush(1500)}
+ try{
+  const r=await loadRemote(u);let remote=r.data;
+  if(remote){remote.settings=remote.settings||{};remote.settings.apiUrl=u;remote=await syncMigrated(u,remote,r.revision);lastRevision=r.revision??lastRevision}
+  const pending=queue();
+  if(remote&&pending.length){
+   const optimistic=applyAll(remote,pending);
+   writeLocal(optimistic);
+   cloudReady=true;
+   pill('● Saving Pending');
+   status('Pending changes mil gayi hain. Cloud par verify ho rahi hain...');
+   const saved=await flush();
+   if(!saved?.ok){pill('● Sync Pending',true);status('Pending data local queue me safe hai. Refresh se delete nahi hoga.',true);return}
+  }else if(remote){
+   writeLocal(remote);
+   cloudReady=true;
+  }else cloudReady=true;
+  status('Cloud database loaded safely.');pill('● Cloud Safe');
+  const current=localDb()||remote||{};
+  const mark=String(current?.settings?.cloudUpdatedAt||r.updatedAtMs||Date.now());
+  if(sessionStorage.getItem(BOOT)!==mark){sessionStorage.setItem(BOOT,mark);setTimeout(()=>location.reload(),220)}
+  else if(queue().length)scheduleFlush(50);
+ }catch(e){
+  cloudReady=true;
+  const pending=queue();
+  if(pending.length){pill('● Sync Pending',true);status('Cloud temporarily unavailable hai. Pending data local queue me safe hai.',true)}
+  else{pill('● Cloud Offline',true);status('Cloud load fail hua. Local copy safe hai; online hote hi retry karein.',true)}
+  scheduleFlush(1500)
+ }
 }
 async function flush(){
- if(flushing||!cloudReady)return;let ds=queue();if(!ds.length)return;flushing=true;const u=endpoint(localDb());if(!u){flushing=false;return}pill('● Saving Cloud');
+ if(flushing)return{ok:false,busy:true};
+ if(!cloudReady)return{ok:false,pending:true,error:'Cloud not ready'};
+ let ds=queue();if(!ds.length)return{ok:true,empty:true};
+ flushing=true;const u=endpoint(localDb());if(!u){flushing=false;return{ok:false,pending:true,error:'Cloud URL missing'}};pill('● Saving Cloud');
  try{
   for(let attempt=1;attempt<=4;attempt++){
    const r=await loadRemote(u),base=r.data||{};let merged=applyAll(base,ds);merged.settings=merged.settings||{};merged.settings.apiUrl=u;merged.settings.storageMode='Google Sheets Cloud';merged.settings.clientUpdatedAt=Date.now();merged.settings.syncClientVersion=VERSION;
-   await postMerged(u,merged,r.revision);await new Promise(x=>setTimeout(x,900+attempt*350));const v=await loadRemote(u);
-   if(v.data&&allSatisfied(v.data,ds)){writeLocal(v.data);const current=queue();saveQueue(current.slice(ds.length));pill('● Cloud Safe');status('Latest changes Google Sheets me verify ho gayi hain.');flushing=false;if(queue().length)scheduleFlush(80);return}
+   await postMerged(u,merged,r.revision);
+   await new Promise(x=>setTimeout(x,900+attempt*350));
+   const v=await loadRemote(u);
+   if(v.data&&allSatisfied(v.data,ds)){
+    const current=queue();
+    const rest=current.slice(ds.length);
+    writeLocal(rest.length?applyAll(v.data,rest):v.data);
+    saveQueue(rest);
+    pill('● Cloud Safe');
+    status('Latest changes Google Sheets me verify ho gayi hain.');
+    flushing=false;
+    if(rest.length)scheduleFlush(80);
+    return{ok:true,verified:true,revision:v.revision,data:v.data}
+   }
   }
   throw new Error('Cloud verify failed')
- }catch(e){pill('● Sync Pending',true);status('Save pending hai; data local queue me safe hai aur retry hoga.',true);flushing=false;scheduleFlush(4000)}
+ }catch(e){
+  pill('● Sync Pending',true);
+  status('Save pending hai; data local queue me safe hai aur retry hoga.',true);
+  flushing=false;
+  scheduleFlush(4000);
+  return{ok:false,pending:true,error:String(e&&e.message?e.message:e)}
+ }
 }
 function scheduleFlush(ms=450){clearTimeout(pushTimer);pushTimer=setTimeout(flush,ms)}
 Storage.prototype.setItem=function(key,value){
@@ -99,8 +146,8 @@ async function pullCloud(force=true){const u=endpoint(localDb());if(!u)return{ok
 async function safeSyncNow(){const d=localDb(),u=endpoint(d);if(!u||!d)return;const r=await loadRemote(u),remote=r.data||{},delta=diff(remote,d);enqueue(delta);return flush()}
 async function testCloud(url){const u=norm(url||document.getElementById('apiUrl')?.value||endpoint(localDb()));if(!u)return{ok:false};try{const r=await jsonp(u,'ping');if(!r?.ok)throw new Error('No response');persistEndpoint(u);pill('● Cloud Connected');status('Google Sheets cloud connection successful.');return{ok:true,response:r}}catch(e){pill('● Cloud Error',true);status('Cloud test fail hua.',true);return{ok:false,error:String(e)}}}
 async function saveAndRun(){const input=document.getElementById('apiUrl'),u=norm(input?.value);if(!u)return;persistEndpoint(u);const t=await testCloud(u);if(!t.ok)return;await pullCloud(true)}
-function mountUi(){const api=document.getElementById('apiUrl');if(!api)return;const wrap=api.parentElement;wrap.style.display='block';wrap.className='panel';wrap.innerHTML='<span class="section-kicker">CLOUD DATABASE V22</span><h3>Google Sheets Safe Sync</h3><p class="muted">Har save latest cloud data ke sath merge aur verify hota hai. Purana browser latest records ko blind overwrite nahi karega.</p><label class="field"><span>Apps Script Web App Link</span><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><div class="form-actions left" style="margin-top:12px"><button class="primary" id="saveApiBtn" type="button">Save & Run Cloud</button><button class="ghost" id="testApiBtn" type="button">Test Link</button><button class="ghost" id="pullCloudBtn" type="button">Pull Latest</button><button class="ghost" id="pushCloudBtn" type="button">Safe Sync Now</button></div><div class="backend-box" id="backendStatus">V22 safe sync active.</div><p class="muted" style="margin-top:10px"><a href="'+SHEET_URL+'" target="_blank" rel="noopener">Open Cloud Database Sheet</a></p>';
- const saved=endpoint(localDb());document.getElementById('apiUrl').value=saved;document.getElementById('saveApiBtn').onclick=e=>{e.preventDefault();saveAndRun()};document.getElementById('testApiBtn').onclick=e=>{e.preventDefault();testCloud()};document.getElementById('pullCloudBtn').onclick=e=>{e.preventDefault();pullCloud(true)};document.getElementById('pushCloudBtn').onclick=e=>{e.preventDefault();safeSyncNow()};const sys=document.getElementById('firebaseBackendStatus');if(sys)sys.textContent='V22 Safe Sync: record-level merge + cloud verification. Firebase is not used.'
+function mountUi(){const api=document.getElementById('apiUrl');if(!api)return;const wrap=api.parentElement;wrap.style.display='block';wrap.className='panel';wrap.innerHTML='<span class="section-kicker">CLOUD DATABASE V24</span><h3>Google Sheets Safe Sync</h3><p class="muted">Har save latest cloud data ke sath merge aur verify hota hai. Purana browser latest records ko blind overwrite nahi karega.</p><label class="field"><span>Apps Script Web App Link</span><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><div class="form-actions left" style="margin-top:12px"><button class="primary" id="saveApiBtn" type="button">Save & Run Cloud</button><button class="ghost" id="testApiBtn" type="button">Test Link</button><button class="ghost" id="pullCloudBtn" type="button">Pull Latest</button><button class="ghost" id="pushCloudBtn" type="button">Safe Sync Now</button></div><div class="backend-box" id="backendStatus">V24 verified sync active.</div><p class="muted" style="margin-top:10px"><a href="'+SHEET_URL+'" target="_blank" rel="noopener">Open Cloud Database Sheet</a></p>';
+ const saved=endpoint(localDb());document.getElementById('apiUrl').value=saved;document.getElementById('saveApiBtn').onclick=e=>{e.preventDefault();saveAndRun()};document.getElementById('testApiBtn').onclick=e=>{e.preventDefault();testCloud()};document.getElementById('pullCloudBtn').onclick=e=>{e.preventDefault();pullCloud(true)};document.getElementById('pushCloudBtn').onclick=e=>{e.preventDefault();safeSyncNow()};const sys=document.getElementById('firebaseBackendStatus');if(sys)sys.textContent='V24 Safe Sync: pending-change merge + cloud verification. Firebase is not used.'
 }
 window.DesignLineCloud={pull:pullCloud,push:safeSyncNow,test:testCloud,saveAndRun,sheetUrl:SHEET_URL,apiUrl:DEFAULT_API_URL,flush};
 if(!localStorage.getItem(U)&&DEFAULT_API_URL){internal=true;rawSet.call(localStorage,U,DEFAULT_API_URL);internal=false}
