@@ -1,0 +1,68 @@
+/* Design Line Agency ERP: horizontal top navigation, October 2026.
+   Deliberately leaves all data and Cloudflare sync logic unchanged. */
+[hidden]{display:none!important}
+.app-shell{display:block!important;min-height:100vh}
+.sidebar{display:none!important}
+.main{width:100%!important;margin-left:0!important;padding:0 28px 38px!important}
+#erpTopbar{position:sticky;top:0;z-index:110;display:block!important;margin:0 -28px 24px!important;padding:13px 28px 0!important;background:#171a20!important;border-bottom:1px solid #2d323a!important;box-shadow:0 9px 24px rgba(0,0,0,.12)!important;color:#fff}
+.topbar-main{display:flex;align-items:center;gap:22px;min-height:55px;margin-bottom:11px}
+.top-brand{flex:0 0 auto;display:flex;gap:10px;align-items:center;margin:0!important;padding:0!important;border:0!important;white-space:nowrap}
+.top-brand .brand-mark{width:40px;height:40px;border-radius:12px;box-shadow:none;font-size:13px}
+.top-brand strong{font-size:15px!important;color:#fff}
+.top-brand span{font-size:10px!important;margin-top:3px;color:#aab0bb!important}
+#erpTopbar .page-heading{min-width:0;flex:1}
+#erpTopbar #pageTitle{color:#fff;font-size:19px!important;font-weight:750;letter-spacing:-.3px;margin:0}
+#erpTopbar #todayText{color:#aab0bb;font-size:10px;margin:3px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#erpTopbar .top-actions{display:flex!important;flex:0 0 auto;gap:9px!important;align-items:center}
+#erpTopbar .sync-pill{background:#21392f!important;color:#93dcb4!important}
+#erpTopbar .badge{background:#332528!important;color:#ffb5b8!important}
+#erpTopbar #themeToggle,#erpTopbar .settings-top{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:39px;border:1px solid #40454d!important;border-radius:11px!important;color:#e0e4eb!important;background:#282d35!important;font-size:12px;font-weight:700;padding:8px 12px;box-shadow:none}
+#erpTopbar #themeToggle:hover,#erpTopbar .settings-top:hover{background:#363c45!important;color:#fff!important}
+#erpTopbar .settings-top{margin:0;border:1px solid #484e57!important;white-space:nowrap}
+#erpTopbar .settings-top span{font-size:18px;width:auto;color:inherit}
+#erpTopbar .settings-top b{font-weight:700}
+#erpTopbar .settings-top.active{border-color:#e4565e!important;box-shadow:inset 0 -2px 0 #e31b23;background:#343038!important}
+#erpTopbar #quickOrderBtn{white-space:nowrap;min-height:39px;border-radius:11px}
+#erpTopbar .top-navigation{display:flex;align-items:center;gap:7px;min-height:53px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#545a66 transparent;scroll-behavior:smooth;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#erpTopbar .top-navigation .nav-btn{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:41px;padding:9px 16px;border:1px solid transparent;border-radius:11px 11px 0 0;color:#b7bdc7;background:transparent;white-space:nowrap;box-shadow:none!important;font-weight:650;font-size:12px;transition:background .15s,color .15s}
+#erpTopbar .top-navigation .nav-btn span{width:auto;color:#9aa2ad;font-size:16px}
+#erpTopbar .top-navigation .nav-btn:hover{background:#292e37;color:#fff}
+#erpTopbar .top-navigation .nav-btn.active{background:#303640;color:#fff;border-bottom:3px solid #e31b23;padding-bottom:7px}
+#erpTopbar .top-navigation .nav-btn.active span{color:#fff}
+#erpTopbar .mobile-menu{display:none!important}
+#v20MobileNav{display:none!important}
+body.dark #erpTopbar{background:#14171c!important}
+@media(max-width:1020px){
+  .main{padding-left:19px!important;padding-right:19px!important}
+  #erpTopbar{margin-left:-19px!important;margin-right:-19px!important;padding-left:19px!important;padding-right:19px!important}
+  #erpTopbar #todayText{display:none}
+  #erpTopbar .page-heading{flex:1}
+  #erpTopbar .sync-pill,#erpTopbar .badge{display:none}
+}
+@media(max-width:768px){
+  .main{padding:0 0 18px!important}
+  #erpTopbar{position:sticky!important;top:0!important;margin:0 0 5px!important;padding:9px 12px 0!important;min-height:unset!important;display:block!important;background:#171a20!important;border-bottom:1px solid #343941!important;box-shadow:0 5px 20px rgba(0,0,0,.16)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  #erpTopbar .topbar-main{gap:8px;min-height:48px;margin:0 0 8px}
+  #erpTopbar .top-brand{min-width:0;flex:1;gap:8px}
+  #erpTopbar .brand-mark{width:35px;height:35px;border-radius:10px}
+  #erpTopbar .brand strong{font-size:13px!important}
+  #erpTopbar .brand span{font-size:9px!important}
+  #erpTopbar .page-heading{display:none!important}
+  #erpTopbar .top-actions{display:flex!important;gap:6px!important;flex:0 0 auto}
+  #erpTopbar #pendingBadge,#erpTopbar #storagePill{display:none!important}
+  #erpTopbar #themeToggle,#erpTopbar .settings-top{display:inline-flex!important;align-items:center;justify-content:center;width:37px!important;min-width:37px!important;height:38px!important;min-height:38px!important;margin:0;padding:0!important;border-radius:10px!important;font-size:19px!important}
+  #erpTopbar #themeToggle span,#erpTopbar .settings-top b{display:none!important}
+  #erpTopbar .settings-top span{font-size:20px!important}
+  #erpTopbar #quickOrderBtn{width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;border-radius:10px!important;padding:0!important}
+  #erpTopbar .top-navigation{display:flex!important;gap:5px;min-height:48px;margin-right:-12px;padding:0 12px 0 0;scrollbar-width:none}
+  #erpTopbar .top-navigation::-webkit-scrollbar{display:none}
+  #erpTopbar .top-navigation .nav-btn{min-height:39px;padding:8px 12px!important;gap:6px;border-radius:10px 10px 0 0;font-size:11px!important}
+  #erpTopbar .top-navigation .nav-btn.active{padding-bottom:6px!important;border-bottom:2px solid #e31b23}
+  #erpTopbar .top-navigation .nav-btn span{font-size:15px}
+  .view{padding:12px!important}
+  .toast{bottom:20px!important}
+}
+@media(max-width:365px){
+  #erpTopbar .brand span{display:none!important}
+  #erpTopbar .top-navigation .nav-btn{padding-left:10px!important;padding-right:10px!important}
+}
