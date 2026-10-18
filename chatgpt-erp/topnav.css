@@ -66,3 +66,6 @@ body.dark #erpTopbar{background:#14171c!important}
   #erpTopbar .brand span{display:none!important}
   #erpTopbar .top-navigation .nav-btn{padding-left:10px!important;padding-right:10px!important}
 }
+
+/* Preserve role-based hiding over the toolbar display styles. */
+#erpTopbar .settings-top.hidden{display:none!important}
