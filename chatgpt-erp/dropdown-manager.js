@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const STORE='designlineERP_custom_dropdowns_v1';
 const MAIN='designlineERP_v2';
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s),allNodes=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const read=()=>{try{return JSON.parse(localStorage.getItem(STORE))||{}}catch(e){return{}}};
 const write=x=>{localStorage.setItem(STORE,JSON.stringify(x));renderManager();refreshFilters()};
@@ -15,7 +15,7 @@ function enhance(sel){if(!sel||sel.dataset.ddmReady==='1')return;const key=keyFo
 function labelText(sel){const l=sel.closest('label.field'),sp=l&&l.querySelector('span');return sp?sp.textContent.trim():(sel.name||'dropdown')}
 function addItem(sel){const key=keyFor(sel),label=labelText(sel),v=(prompt(`${label}\nNayi item / option ka naam likhein:`)||'').trim();if(!v)return;const data=read(),a=Array.isArray(data[key])?data[key]:[];if(!a.some(x=>x.toLowerCase()===v.toLowerCase()))a.push(v);data[key]=a;write(data);addOptions(sel,key);sel.value=v;sel.dispatchEvent(new Event('input',{bubbles:true}));sel.dispatchEvent(new Event('change',{bubbles:true}));setTimeout(refresh,0);toast(`Added: ${v}`)}
 function refreshFilters(){const map=[['#orderServiceFilter','service'],['#quoteTypeFilter','service'],['#expenseCategoryFilter','expenseCategory'],['#orderStatusFilter','status']];for(const [q,k] of map){const s=$(q);if(s)addOptions(s,k)}}
-function refresh(){for(const s of $$('#dynamicForm select'))enhance(s);refreshFilters();injectManager()}
+function refresh(){for(const s of allNodes('#dynamicForm select'))enhance(s);refreshFilters();injectManager()}
 function prettyKey(k){if(k==='service')return'Service / Material Category';if(k==='expenseCategory')return'Expense Category';if(k==='status')return'Job Status';if(k==='paymentMethod')return'Payment Method';if(k==='paidBy')return'Paid By';const p=k.split('::');return p.length>1?`${p[0]} — ${p[1]}`:k}
 function injectManager(){const v=$('#settingsView');if(!v||$('#dropdownManagerPanel'))return;const p=document.createElement('div');p.id='dropdownManagerPanel';p.className='panel';p.innerHTML='<span class="section-kicker">CUSTOM OPTIONS</span><h3>Dropdown Manager</h3><p class="muted">Form ke editable dropdowns ke saath <b>+</b> button diya gaya hai. Yahan aap apni add ki hui items dekh ya remove kar sakte hain.</p><div id="dropdownManagerList"></div><div class="form-actions left" style="margin-top:12px"><button type="button" class="ghost" id="ddmClearAll">Clear All Custom Items</button></div>';v.insertBefore(p,v.lastElementChild);$('#ddmClearAll').onclick=()=>{if(confirm('Remove all custom dropdown items? Historical orders will not be deleted.')){localStorage.removeItem(STORE);refresh();renderManager();toast('Custom dropdown items cleared')}};renderManager()}
 function renderManager(){const box=$('#dropdownManagerList');if(!box)return;const data=read(),entries=Object.entries(data).filter(([,a])=>Array.isArray(a)&&a.length);if(!entries.length){box.innerHTML='<div class="empty">No custom dropdown items yet. Use the + button beside a dropdown.</div>';return}box.innerHTML=entries.map(([k,a])=>`<div class="ddm-group"><div class="ddm-group-title">${esc(prettyKey(k))}</div><div class="ddm-tags">${a.map(v=>`<span class="ddm-tag">${esc(v)}<button type="button" data-ddm-remove="1" data-key="${encodeURIComponent(k)}" data-value="${encodeURIComponent(v)}">×</button></span>`).join('')}</div></div>`).join('')}

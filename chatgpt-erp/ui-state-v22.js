@@ -1,11 +1,11 @@
 (()=>{'use strict';
 const K='designlineERP_v2',VIEWK='designlineERP_active_view_v22',MSGK='designlineERP_v22_msg';
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],N=x=>Number(x)||0,R=x=>'Rs '+N(x).toLocaleString('en-PK'),E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s),allNodes=s=>[...document.querySelectorAll(s)],N=x=>Number(x)||0,R=x=>'Rs '+N(x).toLocaleString('en-PK'),E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const read=()=>{try{return JSON.parse(localStorage.getItem(K))||{}}catch{return{}}},write=db=>localStorage.setItem(K,JSON.stringify(db));
 const VIEWS=['dashboard','orders','customers','expenses','vendors','reports','settings'];
 function active(){return String($('.view.active')?.id||'').replace(/View$/,'')}
 function remember(v){if(VIEWS.includes(v))sessionStorage.setItem(VIEWK,v)}
-function restore(){const v=sessionStorage.getItem(VIEWK);if(!VIEWS.includes(v)||!$('#'+v+'View'))return;$$('.view').forEach(x=>x.classList.remove('active'));$('#'+v+'View').classList.add('active');$$('.nav-btn[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));const n=$(`.nav-btn[data-view="${v}"]`);if(n&&$('#pageTitle'))$('#pageTitle').textContent=n.textContent.trim()}
+function restore(){const v=sessionStorage.getItem(VIEWK);if(!VIEWS.includes(v)||!$('#'+v+'View'))return;allNodes('.view').forEach(x=>x.classList.remove('active'));$('#'+v+'View').classList.add('active');allNodes('.nav-btn[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));const n=$(`.nav-btn[data-view="${v}"]`);if(n&&$('#pageTitle'))$('#pageTitle').textContent=n.textContent.trim()}
 function toast(t){const e=$('#toast');if(!e)return;e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1900)}
 function lines(o){return Array.isArray(o?.lineItems)&&o.lineItems.length?o.lineItems:[o||{}]}
 function flex(x){return ['Flex Printing','Wallpaper + Fitting'].includes(x?.service)}
@@ -16,7 +16,7 @@ const sale=o=>lines(o).reduce((a,l)=>a+saleLine(l),0),received=(db,o)=>N(o.advan
 function vendorBooked(db){let t=0;(db.orders||[]).filter(o=>o.status!=='Cancelled').forEach(o=>lines(o).forEach(l=>{if(l.vendorId)t+=vendorCostLine(l)}));return t}
 function card(l,v,f,c){return `<div class="stat-card" style="--accent:${c}"><div class="stat-top"><span class="stat-label">${E(l)}</span></div><strong class="stat-value">${R(v)}</strong><div class="stat-foot">${E(f)}</div></div>`}
 function dashboard(){}
-function vendorDeleteButtons(){$$('#vendorsBody tr').forEach(tr=>{const e=tr.querySelector('[data-a="editVendor"]');if(!e)return;const box=e.closest('.row-actions')||e.parentElement;if(box.querySelector('[data-v17="deleteVendor"]'))return;const b=document.createElement('button');b.type='button';b.className='icon-btn red';b.dataset.v17='deleteVendor';b.dataset.id=e.dataset.id;b.textContent='Delete';box.appendChild(b)})}
+function vendorDeleteButtons(){allNodes('#vendorsBody tr').forEach(tr=>{const e=tr.querySelector('[data-a="editVendor"]');if(!e)return;const box=e.closest('.row-actions')||e.parentElement;if(box.querySelector('[data-v17="deleteVendor"]'))return;const b=document.createElement('button');b.type='button';b.className='icon-btn red';b.dataset.v17='deleteVendor';b.dataset.id=e.dataset.id;b.textContent='Delete';box.appendChild(b)})}
 function deleteVendor(id){const db=read(),v=(db.vendors||[]).find(x=>x.id===id);if(!v)return;if(!confirm(`Delete vendor "${v.name||id}"? Vendor payment history bhi delete hogi.`))return;db.vendors=(db.vendors||[]).filter(x=>x.id!==id);db.vendorPayments=(db.vendorPayments||[]).filter(p=>p.vendorId!==id);(db.orders||[]).forEach(o=>lines(o).forEach(l=>{if(l.vendorId===id)l.vendorId=''}));remember('vendors');sessionStorage.setItem(MSGK,`Vendor ${v.name||id} deleted`);write(db);setTimeout(()=>location.reload(),350)}
 function phonePK(p){return String(p||'').replace(/\D/g,'').replace(/^0/,'92')}
 function orderNo(o){return N(o.orderNo)?`ORD-${String(N(o.orderNo)).padStart(4,'0')}`:(o.id||'Order')}
