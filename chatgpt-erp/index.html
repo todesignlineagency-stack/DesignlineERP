@@ -16,19 +16,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=20260911-cloud-v10">
 <link rel="stylesheet" href="v20-mobile.css?v=20260918-v21">
+<link rel="stylesheet" href="topnav.css?v=20261018-a">
 </head>
 <body>
 <div id="fatalError" class="fatal-error hidden"></div>
 <div class="app-shell">
-  <aside class="sidebar" id="sidebar">
-    <div class="brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Cloud • V24</span></div></div>
-    <nav>
-      <button class="nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button><button class="nav-btn" data-view="orders"><span>▤</span> Orders</button><button class="nav-btn" data-view="customers"><span>◉</span> Customers</button><button class="nav-btn" data-view="expenses"><span>↘</span> Expenses</button><button class="nav-btn" data-view="vendors"><span>◇</span> Vendors</button><button class="nav-btn" data-view="reports"><span>⌁</span> Reports</button><button class="nav-btn admin-only" data-view="settings"><span>⚙</span> Settings</button>
-    </nav>
-    <div class="sidebar-bottom"><label class="field mini" style="display:none"><span>View Mode</span><select id="roleSelect"><option value="admin" selected>CEO / Admin</option><option value="staff">Staff</option></select></label><button id="themeToggle" class="ghost full">☾ Dark / Light</button></div>
-  </aside>
+  <aside class="sidebar" id="sidebar" hidden aria-hidden="true"><label class="field mini" hidden><select id="roleSelect"><option value="admin" selected>CEO / Admin</option><option value="staff">Staff</option></select></label></aside>
   <main class="main">
-    <header class="topbar"><div class="page-heading"><button class="mobile-menu" id="mobileMenu">☰</button><div><h1 id="pageTitle">Dashboard</h1><p id="todayText">Loading...</p></div></div><div class="top-actions"><span class="sync-pill" id="storagePill">● Local Save</span><span class="badge" id="pendingBadge">0 Pending</span><button class="primary" id="quickOrderBtn">+ New Order</button></div></header>
+    <header class="topbar" id="erpTopbar">
+      <div class="topbar-main">
+        <div class="brand top-brand"><div class="brand-mark">DL</div><div><strong>Design Line</strong><span>Agency ERP • Cloud • V24</span></div></div>
+        <div class="page-heading"><button class="mobile-menu" id="mobileMenu" type="button" hidden aria-hidden="true">☰</button><div><h1 id="pageTitle">Dashboard</h1><p id="todayText">Loading...</p></div></div>
+        <div class="top-actions"><span class="sync-pill" id="storagePill">● Local Save</span><span class="badge" id="pendingBadge">0 Pending</span><button type="button" id="themeToggle" class="ghost theme-top" aria-label="Toggle dark and light mode">☾ <span>Theme</span></button><button type="button" class="nav-btn settings-top admin-only" data-view="settings" title="Settings" aria-label="Settings"><span aria-hidden="true">⚙</span><b>Settings</b></button><button class="primary" id="quickOrderBtn">+ New Order</button></div>
+      </div>
+      <nav class="top-navigation" aria-label="ERP Main Navigation">
+        <button class="nav-btn active" data-view="dashboard"><span aria-hidden="true">▦</span> Dashboard</button>
+        <button class="nav-btn" data-view="orders"><span aria-hidden="true">▤</span> Orders</button>
+        <button class="nav-btn" data-view="customers"><span aria-hidden="true">◉</span> Customers</button>
+        <button class="nav-btn" data-view="expenses"><span aria-hidden="true">↘</span> Expenses</button>
+        <button class="nav-btn" data-view="vendors"><span aria-hidden="true">◇</span> Vendors</button>
+        <button class="nav-btn" data-view="reports"><span aria-hidden="true">⌁</span> Reports</button>
+      </nav>
+    </header>
     <section class="view active" id="dashboardView">
       <div class="hero-strip"><div><span class="eyebrow">BUSINESS CONTROL CENTER</span><h2>Design Line Agency</h2><p>Orders, customer balances, vendor payments, expenses and profit — in one place.</p></div><div class="quick-actions"><button data-jump="orders">Orders</button><button data-jump="expenses">Expenses</button><button data-jump="customers">Customers</button></div></div>
       <div class="cards cards-4" id="dashboardCards"></div><div class="ops-grid" id="opsCards"></div>
